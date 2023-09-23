@@ -33,13 +33,21 @@ git clone https://www.github.com/gtluu/flex_maldi_dda_automation
 ```
 pip install -r /path/to/flex_maldi_dda_automation/requirements.txt
 ```
-7. You will also need to install [pyMALDIproc](https://github.com/gtluu/pymaldiproc), a modified version of [pyimzML](https://github.com/gtluu/pyimzML), and the Python3 version of [icoshift](https://github.com/mars20/icoshift).
+7. You will also need to install [TIMSCONVERT](https://github.com/gtluu/timsconvert).
 ```
-pip install git+https://github.com/gtluu/pymaldiproc
-pip install git+https://github.com/gtluu/pyimzML
-pip install git+https://github.com/mars20/icoshift
+pip install git+https://github.com/gtluu/timsconvert.git
 ```
 
 ## Usage
 
-Under construction
+To run with default parameters:
+
+```
+python run.py --autox autox_file.run
+```
+
+Use the following command for a list and description of parameters:
+
+```
+python run.py --help
+```
