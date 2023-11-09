@@ -31,7 +31,7 @@ conda activate maldi_dda
 
 6. Install with the following command.
 ```
-pip install git+https://github.com/gtluu/flex_maldi_dda_automation.git
+pip install git+https://github.com/gtluu/flex_maldi_dda_automation.git --use-pep517
 ```
 
 ## Usage
