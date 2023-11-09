@@ -1,0 +1,3 @@
+- add docstrings to functions
+- add setup.py for installation
+- add config file for preprocessing settings
