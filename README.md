@@ -29,13 +29,9 @@ conda activate maldi_dda
 
 #### Install This Workflow
 
-6. Download this workflow by cloning the Github repo.
+6. Install with the following command.
 ```
-git clone https://www.github.com/gtluu/flex_maldi_dda_automation
-```
-7. Install dependencies.
-```
-pip install -r /path/to/flex_maldi_dda_automation/requirements.txt
+pip install git+https://github.com/gtluu/flex_maldi_dda_automation.git
 ```
 
 ## Usage
@@ -43,11 +39,11 @@ pip install -r /path/to/flex_maldi_dda_automation/requirements.txt
 To run with default parameters:
 
 ```
-python run.py --autox autox_file.run
+process_maldi_dda --autox autox_file.run
 ```
 
 Use the following command for a list and description of parameters:
 
 ```
-python run.py --help
+process_maldi_dda --help
 ```
