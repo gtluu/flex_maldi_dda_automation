@@ -1,5 +1,6 @@
 import os
 import argparse
+import configparser
 import numpy as np
 import pandas as pd
 import lxml.etree as et
@@ -82,13 +83,81 @@ def parse_maldi_data(dot_d_path, sdk):
 
 
 def preprocess(maldi_spectra):
-    maldi_spectra = trim_spectra(maldi_spectra, lower_mass_range=100, upper_mass_range=2000)
-    maldi_spectra = transform_intensity(maldi_spectra, method='sqrt')
-    maldi_spectra = smooth_baseline(maldi_spectra, method='SavitzkyGolay')
-    maldi_spectra = remove_baseline(maldi_spectra, method='SNIP')
-    maldi_spectra = normalize_intensity(maldi_spectra, method='tic')
-    maldi_spectra = bin_spectra(maldi_spectra, n_bins=38000, lower_mass_range=100, upper_mass_range=2000)
-    maldi_spectra = align_spectra(maldi_spectra)
+    config = configparser.ConfigParser()
+    config.read('../preprocessing.cfg')
+    if config['preprocessing'].getboolean('trim_spectra'):
+        maldi_spectra = trim_spectra(maldi_spectra,
+                                     lower_mass_range=int(config['trim_spectra']['lower_mass_range']),
+                                     upper_mass_range=int(config['trim_spectra']['upper_mass_range']))
+    if config['preprocessing'].getboolean('transform_intensity'):
+        maldi_spectra = transform_intensity(maldi_spectra,
+                                            method=config['transform_intensity']['method'])
+    if config['preprocessing'].getboolean('smooth_baseline'):
+        maldi_spectra = smooth_baseline(maldi_spectra,
+                                        method=config['smooth_baseline']['method'],
+                                        window_length=int(config['smooth_baseline']['window_length']),
+                                        polyorder=int(config['smooth_baseline']['polyorder']),
+                                        delta_mz=float(config['smooth_baseline']['delta_mz']),
+                                        diff_thresh=float(config['smooth_baseline']['diff_thresh']))
+    if config['preprocessing'].getboolean('remove_baseline'):
+        if config['remove_baseline']['smooth_half_window'] == 'None':
+            smooth_half_window = None
+        else:
+            smooth_half_window = int(config['remove_baseline']['smooth_half_window'])
+        if config['remove_baseline']['sigma'] == 'None':
+            sigma = None
+        else:
+            sigma = float(config['remove_baseline']['sigma'])
+        if config['remove_baseline']['repetition'] == 'None':
+            repetition = None
+        else:
+            repetition = int(config['remove_baseline']['repetition'])
+        maldi_spectra = remove_baseline(maldi_spectra,
+                                        method=config['remove_baseline']['method'],
+                                        min_half_window=int(config['remove_baseline']['min_half_window']),
+                                        max_half_window=int(config['remove_baseline']['max_half_window']),
+                                        decreasing=config['remove_baseline'].getboolean('decreasing'),
+                                        smooth_half_window=smooth_half_window,
+                                        filter_order=int(config['remove_baseline']['filter_order']),
+                                        sigma=sigma,
+                                        increment=int(config['remove_baseline']['increment']),
+                                        max_hits=int(config['remove_baseline']['max_hits']),
+                                        window_tol=float(config['remove_baseline']['window_tol']),
+                                        lambda_=int(config['remove_baseline']['lambda_']),
+                                        porder=int(config['remove_baseline']['porder']),
+                                        repetition=repetition,
+                                        degree=int(config['remove_baseline']['degree']),
+                                        gradient=float(config['remove_baseline']['gradient']))
+    if config['preprocessing'].getboolean('normalize_intensity'):
+        maldi_spectra = normalize_intensity(maldi_spectra,
+                                            method=config['normalize_intensity']['method'])
+    if config['preprocessing'].getboolean('bin_spectra'):
+        maldi_spectra = bin_spectra(maldi_spectra,
+                                    n_bins=int(config['bin_spectra']['n_bins']),
+                                    lower_mass_range=int(config['bin_spectra']['lower_mass_range']),
+                                    upper_mass_range=int(config['bin_spectra']['upper_mass_range']))
+    if config['preprocessing'].getboolean('align_spectra'):
+        if config['align_spectra']['n'] == 'f':
+            n = config['align_spectra']['n']
+        elif config['align_spectra']['n'] == 'b':
+            n = config['align_spectra']['n']
+        else:
+            n = int(config['align_spectra']['n'])
+        if config['align_spectra']['scale'] == 'None':
+            scale = None
+        if config['align_spectra']['coshift_preprocessing_max_shift'] == 'None':
+            coshift_preprocessing_max_shift = None
+        else:
+            coshift_preprocessing_max_shift = int(config['align_spectra']['coshift_preprocessing_max_shift'])
+        maldi_spectra = align_spectra(maldi_spectra,
+                                      method=config['align_spectra']['method'],
+                                      inter=config['align_spectra']['inter'],
+                                      n=n,
+                                      scale=scale,
+                                      coshift_preprocessing=config['align_spectra'].getboolean('coshift_preprocessing'),
+                                      coshift_preprocessing_max_shift=coshift_preprocessing_max_shift,
+                                      fill_with_previous=config['align_spectra'].getboolean('fill_with_previous'),
+                                      average2_multiplier=int(config['align_spectra']['average2_multiplier']))
     return maldi_spectra
 
 
