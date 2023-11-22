@@ -84,7 +84,7 @@ def parse_maldi_data(dot_d_path, sdk):
 
 def preprocess(maldi_spectra):
     config = configparser.ConfigParser()
-    config.read('../preprocessing.cfg')
+    config.read(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'preprocessing.cfg'))
     if config['preprocessing'].getboolean('trim_spectra'):
         maldi_spectra = trim_spectra(maldi_spectra,
                                      lower_mass_range=int(config['trim_spectra']['lower_mass_range']),
@@ -196,7 +196,7 @@ def main():
             maldi_spectra = parse_maldi_data(dot_d_path, sdk)
             maldi_spectra = preprocess(maldi_spectra)
             for cont in spot_group:
-                spectrum = [i for i in maldi_spectra if i.spot == cont.attrib['Pos_on_Scout']][0]
+                spectrum = [i for i in maldi_spectra if i.coord == cont.attrib['Pos_on_Scout']][0]
                 spectrum = peak_picking([spectrum],
                                         method=args['peak_picking_method'],
                                         widths=args['peak_picking_widths'],
