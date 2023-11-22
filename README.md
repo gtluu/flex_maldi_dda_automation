@@ -47,3 +47,79 @@ Use the following command for a list and description of parameters:
 ```
 process_maldi_dda --help
 ```
+
+#### Preprocessing Parameters
+
+Default preprocessing parameters are specified in ```preprocessing.cfg```.
+
+```
+[preprocessing]
+trim_spectra = yes
+transform_intensity = yes
+smooth_baseline = yes
+remove_baseline = yes
+normalize_intensity = yes
+bin_spectra = yes
+align_spectra = yes
+
+[trim_spectra]
+lower_mass_range = 100
+upper_mass_range = 2000
+
+[transform_intensity]
+method = sqrt
+
+[smooth_baseline]
+method = SavitzkyGolay
+window_length = 21
+polyorder = 3
+delta_mz = 0.2
+diff_thresh = 0.01
+
+[remove_baseline]
+method = SNIP
+min_half_window = 1
+max_half_window = 100
+decreasing = yes
+smooth_half_window = None
+filter_order = 2
+sigma = None
+increment = 1
+max_hits = 1
+window_tol = 0.000001
+lambda_ = 100
+porder = 1
+repetition = None
+degree = 2
+gradient = 0.001
+
+[normalize_intensity]
+method = tic
+
+[bin_spectra]
+n_bins = 38000
+lower_mass_range = 100
+upper_mass_range = 2000
+
+[align_spectra]
+method = average
+inter = whole
+n = f
+scale = None
+coshift_preprocessing = no
+coshift_preprocessing_max_shift = None
+fill_with_previous = yes
+average2_multiplier = 3
+
+```
+
+User defined parameters can be defined by copying this file and changing the parameters as needed. The 
+```preprocessing``` section specifies whether that preprocessing step should be run. Parameters for each preprocessing 
+step are specified and can be modified in their respective sections. ```yes``` and ```no``` represent the boolean 
+values ```True``` and ```False```, respectively.
+
+After editing your custom preprocessing parameters, run this workflow with the following command:
+
+```
+process_maldi_dda --autox autox_file.run --preprocessing /path/to/custom_preprocessing.cfg
+```
