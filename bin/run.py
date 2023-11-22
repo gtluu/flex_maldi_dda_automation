@@ -19,6 +19,8 @@ def arg_descriptions():
                     'method': '.m method directory to be used for MS/MS data acquisition. Defaults to method used for '
                               'MS1 acquisition if not specified.',
                     'outdir': 'Path to folder in which to write output files. Default = none',
+                    'preprocessing': 'Path to user defined preprocessing config file specifying preprocessing steps '
+                                     'and parameters.',
                     'top_n': 'Top N number of peaks to select from each spot for MS/MS acquisition. Default = 10',
                     'peak_picking_method': 'Method to use for peak picking. Default = cwt',
                     'peak_picking_widths': 'Peak widths values to use during peak picking. Default = None',
@@ -41,6 +43,7 @@ def get_args():
     optional.add_argument('--blank', help=desc['blank'], default='', type=str)
     optional.add_argument('--method', help=desc['method'], default='', type=str)
     optional.add_argument('--outdir', help=desc['outdir'], default='', type=str)
+    optional.add_argument('--preprocessing', help=desc['preprocessing'], default='', type=str)
     optional.add_argument('--top_n', help=desc['top_n'], default=10, type=int)
     optional.add_argument('--peak_picking_method', help=desc['peak_picking_method'], default='cwt', type=str,
                           choices=['cwt', 'locmax'])
@@ -82,9 +85,12 @@ def parse_maldi_data(dot_d_path, sdk):
     return list_of_scans
 
 
-def preprocess(maldi_spectra):
+def preprocess(maldi_spectra, preprocess_config_file):
     config = configparser.ConfigParser()
-    config.read(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'preprocessing.cfg'))
+    if preprocess_config_file == '':
+        config.read(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'preprocessing.cfg'))
+    else:
+        config.read(preprocess_config_file)
     if config['preprocessing'].getboolean('trim_spectra'):
         maldi_spectra = trim_spectra(maldi_spectra,
                                      lower_mass_range=int(config['trim_spectra']['lower_mass_range']),
@@ -180,7 +186,7 @@ def main():
             if spot_group.attrib['sampleName'] == args['blank']:
                 dot_d_path = os.path.join(autox.attrib['directory'], spot_group.attrib['sampleName'] + '.d')
                 maldi_spectra = parse_maldi_data(dot_d_path, sdk)
-                maldi_spectra = preprocess(maldi_spectra)
+                maldi_spectra = preprocess(maldi_spectra, args['preprocess'])
                 maldi_spectra = peak_picking(maldi_spectra,
                                              method=args['peak_picking_method'],
                                              widths=args['peak_picking_widths'],
@@ -194,7 +200,7 @@ def main():
         if spot_group.attrib['sampleName'] != args['blank']:
             dot_d_path = os.path.join(autox.attrib['directory'], spot_group.attrib['sampleName'] + '.d')
             maldi_spectra = parse_maldi_data(dot_d_path, sdk)
-            maldi_spectra = preprocess(maldi_spectra)
+            maldi_spectra = preprocess(maldi_spectra, args['preprocess'])
             for cont in spot_group:
                 spectrum = [i for i in maldi_spectra if i.coord == cont.attrib['Pos_on_Scout']][0]
                 spectrum = peak_picking([spectrum],
