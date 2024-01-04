@@ -17,7 +17,7 @@ setup(
     license='Apache License',
     author='Gordon T. Luu',
     author_email='gtluu912@gmail.com',
-    packages=['bin'],
+    packages=['bin', 'etc'],
     description='MALDI-DDA automation script for timsTOF fleX AutoXecute datasets',
     entry_points={'console_scripts': ['process_maldi_dda=bin.run:main']},
     install_requires=install_requires,
