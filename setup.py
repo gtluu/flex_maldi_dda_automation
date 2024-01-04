@@ -12,7 +12,7 @@ if os.path.isfile('requirements.txt'):
 
 setup(
     name='flex_maldi_dda_automation',
-    version='0.3.0',
+    version='0.3.1',
     url='https://github.com/gtluu/flex_maldi_dda_automation',
     license='Apache License',
     author='Gordon T. Luu',
