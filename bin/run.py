@@ -186,7 +186,7 @@ def main():
             if spot_group.attrib['sampleName'] == args['blank']:
                 dot_d_path = os.path.join(autox.attrib['directory'], spot_group.attrib['sampleName'] + '.d')
                 maldi_spectra = parse_maldi_data(dot_d_path, sdk)
-                maldi_spectra = preprocess(maldi_spectra, args['preprocess'])
+                maldi_spectra = preprocess(maldi_spectra, args['preprocessing'])
                 maldi_spectra = peak_picking(maldi_spectra,
                                              method=args['peak_picking_method'],
                                              widths=args['peak_picking_widths'],
@@ -200,7 +200,7 @@ def main():
         if spot_group.attrib['sampleName'] != args['blank']:
             dot_d_path = os.path.join(autox.attrib['directory'], spot_group.attrib['sampleName'] + '.d')
             maldi_spectra = parse_maldi_data(dot_d_path, sdk)
-            maldi_spectra = preprocess(maldi_spectra, args['preprocess'])
+            maldi_spectra = preprocess(maldi_spectra, args['preprocessing'])
             for cont in spot_group:
                 spectrum = [i for i in maldi_spectra if i.coord == cont.attrib['Pos_on_Scout']][0]
                 spectrum = peak_picking([spectrum],
