@@ -88,7 +88,7 @@ def parse_maldi_data(dot_d_path, sdk):
 def preprocess(maldi_spectra, preprocess_config_file):
     config = configparser.ConfigParser()
     if preprocess_config_file == '':
-        config.read(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'preprocessing.cfg'))
+        config.read(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'etc', 'preprocessing.cfg'))
     else:
         config.read(preprocess_config_file)
     if config['preprocessing'].getboolean('trim_spectra'):
