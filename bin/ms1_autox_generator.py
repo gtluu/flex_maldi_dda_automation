@@ -89,7 +89,12 @@ def load_ui():
     loader = QUiLoader()
     app = QtWidgets.QApplication()
     window = loader.load('ms1_autox_generator.ui', None)
-    window.MaldiPlateGeometryCombo()
+    for geometry in get_geometry_files(geometry_path='E:\\GeometryFiles'):
+        # TODO: maybe replace this with hardcoded preselected geometries (only well plate formats, no special chips)
+        window.MaldiPlateGeometryCombo.addItem(os.path.splitext(os.path.split(geometry)[-1])[0])
+    # TODO: add code to browse for plate map
+    # TODO: add code to browse for methods and populate the qtablewidget
+    # TODO: add code to run autox generator function
     window.show()
     app.exec()
 
