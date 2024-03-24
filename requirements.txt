@@ -12,6 +12,7 @@ dash==2.14.1
 dash-extensions==1.0.4
 dash-bootstrap-components==1.5.0
 plotly==5.18.0
+pyside6
 git+https://github.com/mars20/icoshift.git
 git+https://github.com/gtluu/pymaldiproc.git@v0.2.1
 git+https://github.com/gtluu/pyTDFSDK.git@e44d8c05f7cf4d67d35b195f62d4e4d9704f5aa8
