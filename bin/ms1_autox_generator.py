@@ -88,7 +88,7 @@ def write_autox_seq(conditions_dict, methods, output_path):
 def load_ui():
     loader = QUiLoader()
     app = QtWidgets.QApplication()
-    window = loader.load('..\\ms1_autox_generator.ui', None)
+    window = loader.load('ms1_autox_generator.ui', None)
     window.MaldiPlateGeometryCombo()
     window.show()
     app.exec()
