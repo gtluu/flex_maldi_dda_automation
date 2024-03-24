@@ -5,7 +5,7 @@ import tzlocal
 import pandas as pd
 import lxml.etree as et
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QTableWidgetItem, QSizePolicy, QHeaderView, \
-    QAbstractItemView
+    QAbstractItemView, QMessageBox
 from ms1_autox_generator_template import Ui_MainWindow
 
 
@@ -41,6 +41,8 @@ def get_geometry_files(geometry_path='D:\\Methods\\GeometryFiles'):
 
 
 def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
+    messages = ''
+
     # Get AutoXecute attribute dict.
     autox_attrib = {'AnalysisSpectraType': 'Single_Spectra',
                     'DataStorage': 'Container',
@@ -86,14 +88,17 @@ def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
                                                      'Pos_on_Scout': spot,
                                                      'acqJobMode': 'MS'})
                     else:
-                        print(f'{spot} not found on selected geometry and not added to the AutoXecute Sequence.')
+                        messages += f'{spot} not found on selected geometry and not added to the AutoXecute Sequence.\n'
             else:
-                print(f'All spots for {condition} not found on selected geometry and not added to the Autoxecute Sequence.')
+                messages += (f'All spots for {condition} not found on selected geometry and not added to the '
+                             f'Autoxecute Sequence.\n')
     autox_tree = et.ElementTree(autox)
     autox_tree.write(output_path,
                      encoding='utf-8',
                      xml_declaration=True,
                      pretty_print=True)
+
+    return messages
 
 
 class Gui(QMainWindow, Ui_MainWindow):
@@ -170,13 +175,24 @@ class Gui(QMainWindow, Ui_MainWindow):
             self.MethodsTable.removeRow(row)
 
     def run(self):
-        write_autox_seq(parse_maldi_plate_map(self.maldi_plate_map_path),
-                        self.methods,
-                        QFileDialog().getSaveFileName(self,
-                                                      'Save AutoXecute Sequence...',
-                                                      '',
-                                                      filter='AutoXecute Sequence (*.run)')[0],
-                        self.geometry_paths[str(self.MaldiPlateGeometryCombo.currentText())])
+        # TODO: add error messages if plate map and methods are empty
+        outfile = QFileDialog().getSaveFileName(self,
+                                                'Save AutoXecute Sequence...',
+                                                '',
+                                                filter='AutoXecute Sequence (*.run)')[0]
+        messages = write_autox_seq(parse_maldi_plate_map(self.maldi_plate_map_path),
+                                   self.methods,
+                                   outfile,
+                                   self.geometry_paths[str(self.MaldiPlateGeometryCombo.currentText())])
+        if messages != '':
+            messages_outfile = os.path.splitext(outfile)[0] + '.error'
+            with open(messages_outfile, 'w') as logfile:
+                logfile.write(messages)
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle('Error')
+            msg_box.setText(f'Unable to write some samples from the provided plate map whose plate coordinates were '
+                            f'not found in the selected MALDI plate geometry. See {messages_outfile} for more details')
+            msg_box.exec()
 
 
 def load_ui():
