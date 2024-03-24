@@ -176,23 +176,40 @@ class Gui(QMainWindow, Ui_MainWindow):
 
     def run(self):
         # TODO: add error messages if plate map and methods are empty
-        outfile = QFileDialog().getSaveFileName(self,
-                                                'Save AutoXecute Sequence...',
-                                                '',
-                                                filter='AutoXecute Sequence (*.run)')[0]
-        messages = write_autox_seq(parse_maldi_plate_map(self.maldi_plate_map_path),
-                                   self.methods,
-                                   outfile,
-                                   self.geometry_paths[str(self.MaldiPlateGeometryCombo.currentText())])
-        if messages != '':
-            messages_outfile = os.path.splitext(outfile)[0] + '.error'
-            with open(messages_outfile, 'w') as logfile:
-                logfile.write(messages)
-            msg_box = QMessageBox(self)
-            msg_box.setWindowTitle('Error')
-            msg_box.setText(f'Unable to write some samples from the provided plate map whose plate coordinates were '
-                            f'not found in the selected MALDI plate geometry. See {messages_outfile} for more details')
-            msg_box.exec()
+        err_msg = ''
+        if self.maldi_plate_map_path == '':
+            err_msg += '- MALDI plate map not selected. Select a plate map (*.csv) to continue.\n'
+
+        if not self.methods:
+            err_msg += '- No methods selected. Select at least one method to continue.\n'
+        if err_msg != '':
+            error_msg_box = QMessageBox(self)
+            error_msg_box.setWindowTitle('Error')
+            error_msg_box.setText(err_msg)
+            error_msg_box.exec()
+        if not self.maldi_plate_map_path == '' and self.methods:
+            outfile = QFileDialog().getSaveFileName(self,
+                                                    'Save AutoXecute Sequence...',
+                                                    '',
+                                                    filter='AutoXecute Sequence (*.run)')[0]
+            messages = write_autox_seq(parse_maldi_plate_map(self.maldi_plate_map_path),
+                                       self.methods,
+                                       outfile,
+                                       self.geometry_paths[str(self.MaldiPlateGeometryCombo.currentText())])
+            finished = QMessageBox(self)
+            finished.setWindowTitle('AutoXecute Sequence Generator')
+            finished.setText(f'The following AutoXecute Sequence has been created:\n{outfile}')
+            finished.exec()
+            if messages != '':
+                messages_outfile = os.path.splitext(outfile)[0] + '.error'
+                with open(messages_outfile, 'w') as logfile:
+                    logfile.write(messages)
+                error_msg_box = QMessageBox(self)
+                error_msg_box.setWindowTitle('Error')
+                error_msg_box.setText(f'Unable to write some samples from the provided plate map whose plate '
+                                      f'coordinates were not found in the selected MALDI plate geometry. See '
+                                      f'{messages_outfile} for more details')
+                error_msg_box.exec()
 
 
 def load_ui():
