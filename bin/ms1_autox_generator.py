@@ -1,4 +1,5 @@
 import os
+import configparser
 import datetime
 import pytz
 import tzlocal
@@ -25,7 +26,7 @@ def parse_maldi_plate_map(plate_map_filename):
     return conditions_dict
 
 
-def get_geometry_files(geometry_path='D:\\Methods\\GeometryFiles'):
+def get_geometry_files(geometry_path):
     # Get list of .xeo geometry files from the GeometryFiles path.
     geometry_files = [os.path.join(dirpath, filename).replace('/', '\\')
                       for dirpath, dirnames, filenames in os.walk(geometry_path)
@@ -56,7 +57,7 @@ def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
                     'ejectTargetAfterMeasurement': 'false',
                     'fragmentMass': '0.0',
                     'geometry': geometry_path,
-                    # TODO: have config file to change geometry directory too; or fallback to default geometries
+                    # TODO: or fallback to default geometries
                     'parentMass': '0.0',
                     'stopAfterMsMeasurement': 'false',
                     'targetID': '',
@@ -120,10 +121,13 @@ class Gui(QMainWindow, Ui_MainWindow):
 
         self.maldi_plate_map_path = ''
         self.methods = {}
-        self.geometry_paths = get_geometry_files(geometry_path='E:\\GeometryFiles')
         self.selected_row_from_table = ''
 
         # Populate dropdown with plate geometries.
+        config = configparser.ConfigParser()
+        config.read(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'etc', 'ms1_autox_generator.cfg'))
+        self.geometry_paths = get_geometry_files(geometry_path=config['GeometryFiles']['path'].replace('/', '\\'))
+
         for key, value in self.geometry_paths.items():
             # TODO: maybe replace this with hardcoded preselected geometries (only well plate formats, no special chips)
             self.MaldiPlateGeometryCombo.addItem(key)
@@ -133,6 +137,7 @@ class Gui(QMainWindow, Ui_MainWindow):
         self.MethodsTable.selectionModel().selectionChanged.connect(self.select_from_methods_table)
         self.RemoveMethodsButton.clicked.connect(self.remove_methods)
         self.GenerateAutoXecuteButton.clicked.connect(self.run)
+        self.ChangeGeometryFilesDirectory.triggered.connect(self.change_geometry_files_directory)
 
     def select_maldi_plate_map(self):
         self.maldi_plate_map_path = QFileDialog().getOpenFileName(self,
@@ -173,6 +178,22 @@ class Gui(QMainWindow, Ui_MainWindow):
         for row in sorted([i.row() for i in self.selected_row_from_table], reverse=True):
             del self.methods[self.MethodsTable.item(row, 0).text()]
             self.MethodsTable.removeRow(row)
+
+    def change_geometry_files_directory(self):
+        geometry_files_directory = QFileDialog().getExistingDirectory(self,
+                                                                      'Select GeometryFiles Path...',
+                                                                      '').replace('/', '\\')
+        config = configparser.ConfigParser()
+        config.read(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'etc', 'ms1_autox_generator.cfg'))
+        config['GeometryFiles']['path'] = geometry_files_directory
+        with open(os.path.join(os.path.split(os.path.dirname(__file__))[0],
+                               'etc',
+                               'ms1_autox_generator.cfg'),
+                  'w') as config_file:
+            config.write(config_file)
+        self.geometry_paths = get_geometry_files(geometry_path=geometry_files_directory)
+        for key, value in self.geometry_paths.items():
+            self.MaldiPlateGeometryCombo.addItem(key)
 
     def run(self):
         err_msg = ''
