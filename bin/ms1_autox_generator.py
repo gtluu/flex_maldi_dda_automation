@@ -64,11 +64,9 @@ def write_autox_seq(conditions_dict, methods, output_path):
                     'use1to1Preteaching': 'false',
                     'version': '2.0',
                     'executeExternalCalibration': 'true'}
-    conditions = parse_maldi_plate_map('C:\\Users\\bass\\data\\20240322_autox_windows\\strains_map.csv')
-    print(conditions)
     autox = et.Element('table', attrib=autox_attrib)
     for method in methods:
-        for condition, list_of_spots in conditions:
+        for condition, list_of_spots in conditions_dict:
             spot_group = et.SubElement(autox,
                                        'spot_group',
                                        attrib={'sampleName': f'{condition}_{os.path.splitext(os.path.split(method)[-1])[0]}',
@@ -103,5 +101,5 @@ if __name__ == '__main__':
     #autox = autox_tree.getroot()
     #for key, value in autox.attrib.items():
     #    print(f'{key}: {value}')
-    #load_ui()
-    write_autox_seq('', '', 'test.run')
+    load_ui()
+    #write_autox_seq('', '', 'test.run')
