@@ -1,14 +1,9 @@
 import os
-import sys
-import winreg
 import datetime
 import pytz
 import tzlocal
-import numpy as np
 import pandas as pd
 import lxml.etree as et
-from PySide6 import QtWidgets
-from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QTableWidgetItem, QSizePolicy, QHeaderView, \
     QAbstractItemView
 from ms1_autox_generator_template import Ui_MainWindow
@@ -173,9 +168,6 @@ class Gui(QMainWindow, Ui_MainWindow):
 
 
 def load_ui():
-    # loader = QUiLoader()
-    # app = QtWidgets.QApplication()
-    # window = loader.load('ms1_autox_generator.ui', None)
     app = QApplication([])
     window = Gui()
     window.show()
@@ -183,11 +175,4 @@ def load_ui():
 
 
 if __name__ == '__main__':
-    # conditions = parse_maldi_plate_map('C:\\Users\\bass\\data\\20240322_autox_windows\\strains_map.csv')
-    # method_files = ''
-    # autox_tree = et.parse('C:\\Users\\bass\\data\\UCSC_Robbie_MALDI\\UCSC_Robbie_MALDI\\240315\\Bsub_MALDI_DDA_MR1\\Bsub_MALDI_DDA_MR1.run')
-    # autox = autox_tree.getroot()
-    # for key, value in autox.attrib.items():
-    #    print(f'{key}: {value}')
     load_ui()
-    # write_autox_seq('', '', 'test.run')
