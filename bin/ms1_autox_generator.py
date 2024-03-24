@@ -10,7 +10,6 @@ from ms1_autox_generator_template import Ui_MainWindow
 
 
 def parse_maldi_plate_map(plate_map_filename):
-    # TODO: add check to make sure the plate map position exists in the selected geometry file
     plate_map = pd.read_csv(plate_map_filename, index_col=0)
     plate_dict = {}
     for index, row in plate_map.iterrows():
@@ -27,7 +26,6 @@ def parse_maldi_plate_map(plate_map_filename):
 
 
 def get_geometry_files(geometry_path='D:\\Methods\\GeometryFiles'):
-    # TODO: use this function in UI to get list to populate dropdown menu
     # Get list of .xeo geometry files from the GeometryFiles path.
     geometry_files = [os.path.join(dirpath, filename).replace('/', '\\')
                       for dirpath, dirnames, filenames in os.walk(geometry_path)
@@ -43,6 +41,7 @@ def get_geometry_files(geometry_path='D:\\Methods\\GeometryFiles'):
 
 
 def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
+    # Get AutoXecute attribute dict.
     autox_attrib = {'AnalysisSpectraType': 'Single_Spectra',
                     'DataStorage': 'Container',
                     'appname': 'timsControl',
@@ -55,7 +54,7 @@ def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
                     'ejectTargetAfterMeasurement': 'false',
                     'fragmentMass': '0.0',
                     'geometry': geometry_path,
-                    # TODO: parse geometries from geometry directory; have config file to change geometry directory too; or fallback to default geometries
+                    # TODO: have config file to change geometry directory too; or fallback to default geometries
                     'parentMass': '0.0',
                     'stopAfterMsMeasurement': 'false',
                     'targetID': '',
@@ -63,20 +62,33 @@ def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
                     'use1to1Preteaching': 'false',
                     'version': '2.0',
                     'executeExternalCalibration': 'true'}
+
+    # Get spot position names from selected geometry file.
+    geometree = et.parse(geometry_path)
+    position_names = [element.get('PositionName') for element in geometree.xpath('//PlateSpots//*[@PositionName]')]
+
+    # Write new AutoXecute *.run file.
     autox = et.Element('table', attrib=autox_attrib)
     for method in methods:
         for condition, list_of_spots in conditions_dict.items():
-            spot_group = et.SubElement(autox,
-                                       'spot_group',
-                                       attrib={
-                                           'sampleName': f'{condition}_{os.path.splitext(os.path.split(method)[-1])[0]}',
-                                           'acqMethod': method})
-            for spot in list_of_spots:
-                cont = et.SubElement(spot_group,
-                                     'cont',
-                                     attrib={'Chip_on_Scout': '0',
-                                             'Pos_on_Scout': spot,
-                                             'acqJobMode': 'MS'})
+            spots_exist = [True if spot in position_names else False for spot in list_of_spots]
+            if any(spots_exist):
+                spot_group = et.SubElement(autox,
+                                           'spot_group',
+                                           attrib={
+                                               'sampleName': f'{condition}_{os.path.splitext(os.path.split(method)[-1])[0]}',
+                                               'acqMethod': method})
+                for spot in list_of_spots:
+                    if spot in position_names:
+                        cont = et.SubElement(spot_group,
+                                             'cont',
+                                             attrib={'Chip_on_Scout': '0',
+                                                     'Pos_on_Scout': spot,
+                                                     'acqJobMode': 'MS'})
+                    else:
+                        print(f'{spot} not found on selected geometry and not added to the AutoXecute Sequence.')
+            else:
+                print(f'All spots for {condition} not found on selected geometry and not added to the Autoxecute Sequence.')
     autox_tree = et.ElementTree(autox)
     autox_tree.write(output_path,
                      encoding='utf-8',
