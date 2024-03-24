@@ -107,7 +107,7 @@ class Gui(QMainWindow, Ui_MainWindow):
         self.MethodsTable.setRowCount(0)
 
         self.maldi_plate_map_path = ''
-        self.methods = []
+        self.methods = {}
         self.geometry_paths = get_geometry_files(geometry_path='E:\\GeometryFiles')
         self.selected_row_from_table = ''
 
@@ -143,20 +143,23 @@ class Gui(QMainWindow, Ui_MainWindow):
             elif methods_path.endswith('.m'):
                 methods = [methods_path]
             methods = [i.replace('/', '\\') for i in methods]
-            self.methods = self.methods + methods
-            methods = [os.path.split(i)[-1] for i in methods]
             old_row_count = self.MethodsTable.rowCount()
             self.MethodsTable.setRowCount(self.MethodsTable.rowCount() + len(methods))
-            for row, method_filename in enumerate(methods, start=old_row_count):
-                text_item = QTableWidgetItem(method_filename)
+            for row, i in enumerate(methods, start=old_row_count):
+                new_key = os.path.split(i)[-1]
+                if new_key in self.methods.keys():
+                    copy_count = len([i for i in self.methods.keys() if i.startswith(new_key)])
+                    new_key += f'({str(copy_count)})'
+                self.methods[new_key] = i
+                text_item = QTableWidgetItem(new_key)
                 self.MethodsTable.setItem(row, 0, text_item)
 
     def select_from_methods_table(self):
         self.selected_row_from_table = self.MethodsTable.selectionModel().selectedIndexes()
 
     def remove_methods(self):
-        # TODO: not sure if this removes methods from self.methods?
         for row in sorted([i.row() for i in self.selected_row_from_table], reverse=True):
+            del self.methods[self.MethodsTable.item(row, 0).text()]
             self.MethodsTable.removeRow(row)
 
     def run(self):
