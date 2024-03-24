@@ -175,7 +175,6 @@ class Gui(QMainWindow, Ui_MainWindow):
             self.MethodsTable.removeRow(row)
 
     def run(self):
-        # TODO: add error messages if plate map and methods are empty
         err_msg = ''
         if self.maldi_plate_map_path == '':
             err_msg += '- MALDI plate map not selected. Select a plate map (*.csv) to continue.\n'
