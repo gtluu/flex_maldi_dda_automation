@@ -48,12 +48,12 @@ def i_activate_the_magic_card_polymerization(sorted_dlist_lower, frame, mode, pr
     mz_arrays = [copy.deepcopy(spectrum.mz_array) for spectrum, data in spectra]
     intensity_arrays = [copy.deepcopy(spectrum.intensity_array)
                         for spectrum, data in spectra]
-    stitched_mz_array = np.concatenate(mz_arrays)
-    stitched_intensity_array = np.concatenate(intensity_arrays)
-    return stitched_mz_array, stitched_intensity_array
+    fusion_mz_array = np.concatenate(mz_arrays)
+    fusion_intensity_array = np.concatenate(intensity_arrays)
+    return fusion_mz_array, fusion_intensity_array
 
 
-def write_stitched_mzml_metadata(writer, dlist, filenames, mode, barebones_metadata):
+def write_fusion_mzml_metadata(writer, dlist, filenames, mode, barebones_metadata):
     # Write controlled vocabularies
     writer.controlled_vocabularies()
     # Basic file descriptions.
@@ -142,10 +142,13 @@ def write_stitched_mzml_metadata(writer, dlist, filenames, mode, barebones_metad
     writer.instrument_configuration_list([inst_config])
 
 
-def write_stitched_mzml(dlist, sorted_dlist_lower, outfile, mode, profile_bins, compression, encoding):
+def write_fusion_mzml(dlist, sorted_dlist_lower, filenames, outfile,
+                      mode, profile_bins, compression, encoding, barebones_metadata):
     # initialize mzml writer
     writer = MzMLWriter(outfile, close=True)
     with writer:
+        # Write mzML metadata.
+        write_fusion_mzml_metadata(writer, dlist, filenames, mode, barebones_metadata)
         # Write spectra list.
         with writer.run(id='run',
                         instrument_configuration='instrument',
@@ -155,35 +158,38 @@ def write_stitched_mzml(dlist, sorted_dlist_lower, outfile, mode, profile_bins, 
                 # code to parse datasets into TsfSpectrum and append numpy arrays
                 for frame in range(1, dlist[0].analysis['Frames'].shape[0] + 1):
                     # get a maldiframeinfo dict
-                    maldiframeinfo_dict = dlist[0].analysis['MaldiFrameInfo'][dlist[0].analysis['MaldiFrameInfo']['Frame'] ==
-                                                                              frame].to_dict(orient='records')[0]
+                    maldiframeinfo_dict = \
+                        dlist[0].analysis['MaldiFrameInfo'][dlist[0].analysis['MaldiFrameInfo']['Frame'] ==
+                                                            frame].to_dict(orient='records')[0]
                     # get, trim, and stitch spectra
-                    stitched_mz_array, stitched_intensity_array = i_activate_the_magic_card_polymerization(sorted_dlist_lower,
-                                                                                                           frame,
-                                                                                                           mode,
-                                                                                                           profile_bins,
-                                                                                                           encoding)
+                    fusion_mz_array, fusion_intensity_array = i_activate_the_magic_card_polymerization(
+                        sorted_dlist_lower,
+                        frame,
+                        mode,
+                        profile_bins,
+                        encoding)
                     # Build params list for spectrum.
                     scan_count += 1
-                    base_peak_index = np.where(stitched_intensity_array == np.max(stitched_intensity_array))
+                    base_peak_index = np.where(fusion_intensity_array == np.max(fusion_intensity_array))
                     params = ['MS1 spectrum',
                               {'ms level': 1},
-                              {'total ion current': sum(stitched_intensity_array)},
-                              {'base peak m/z': stitched_mz_array[base_peak_index][0].astype(float)},
+                              {'total ion current': sum(fusion_intensity_array)},
+                              {'base peak m/z': fusion_mz_array[base_peak_index][0].astype(float)},
                               ({'name': 'base peak intensity',
                                 'unit_name': 'number of detector counts',
-                                'value': stitched_intensity_array[base_peak_index][0].astype(float)}),
-                              {'highest observed m/z': float(max(stitched_mz_array))},
-                              {'lowest observed m/z': float(max(stitched_mz_array))},
+                                'value': fusion_intensity_array[base_peak_index][0].astype(float)}),
+                              {'highest observed m/z': float(max(fusion_mz_array))},
+                              {'lowest observed m/z': float(max(fusion_mz_array))},
                               {'maldi spot identifier': get_maldi_coords(dlist[0],
                                                                          maldiframeinfo_dict)}]
                     encoding_dict = {'m/z array': get_encoding_dtype(encoding),
                                      'intensity array': get_encoding_dtype(encoding)}
                     # Write MS1 spectrum
-                    writer.write_spectrum(stitched_mz_array,
-                                          stitched_intensity_array,
+                    writer.write_spectrum(fusion_mz_array,
+                                          fusion_intensity_array,
                                           id='scan=' + str(scan_count),
-                                          polarity=list(set(dlist[0].analysis['Frames']['Polarity'].values.tolist()))[0],
+                                          polarity=list(set(dlist[0].analysis['Frames']['Polarity'].values.tolist()))[
+                                              0],
                                           centroided=get_centroid_status(mode)[0],
                                           scan_start_time=0,
                                           # other_arrays=None
@@ -192,7 +198,7 @@ def write_stitched_mzml(dlist, sorted_dlist_lower, outfile, mode, profile_bins, 
                                           compression=compression)
 
 
-def main():
+def run():
     # tmp params
     mode = 'profile'
     profile_bins = 0
@@ -202,6 +208,7 @@ def main():
     filenames = ['C:\\Users\\bass\\data\\20240322_autox_windows\\strain1_liloandstitch_mr1.d',
                  'C:\\Users\\bass\\data\\20240322_autox_windows\\strain1_liloandstitch_mr2.d',
                  'C:\\Users\\bass\\data\\20240322_autox_windows\\strain1_liloandstitch_mr3.d']
+    outfile = 'C:\\Users\\bass\\data\\20240322_autox_windows\\test.mzML'
 
     # read in datasets
     dll = init_tdf_sdk_api()
@@ -231,7 +238,15 @@ def main():
                     sys.exit(1)
                 else:
                     # run the workflow
-                    write_stitched_mzml(dlist, 'C:\\Users\\bass\\data\\20240322_autox_windows\\test.mzML')
+                    write_fusion_mzml(dlist,
+                                      sorted_dlist_lower,
+                                      filenames,
+                                      outfile,
+                                      mode,
+                                      profile_bins,
+                                      compression,
+                                      encoding,
+                                      barebones_metadata)
 
     else:
         print('error')
@@ -239,4 +254,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    run()
