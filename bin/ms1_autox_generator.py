@@ -92,9 +92,8 @@ def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
             if any(spots_exist):
                 spot_group = et.SubElement(autox,
                                            'spot_group',
-                                           attrib={
-                                               'sampleName': f'{condition}_{os.path.splitext(os.path.split(method)[-1])[0]}',
-                                               'acqMethod': method})
+                                           attrib={'sampleName': f'{condition}_{os.path.splitext(os.path.split(method)[-1])[0]}',
+                                                   'acqMethod': method})
                 for spot in list_of_spots:
                     if spot in position_names:
                         cont = et.SubElement(spot_group,
