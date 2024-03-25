@@ -31,7 +31,7 @@ def parse_maldi_plate_map(plate_map_filename):
 
 def get_geometry_files(geometry_path):
     config = configparser.ConfigParser()
-    config.read(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'etc', 'ms1_autox_generator.cfg'))
+    config.read(os.path.join(os.path.dirname(__file__), 'etc', 'ms1_autox_generator.cfg'))
     defaults = config['GeometryFiles']['defaults'].split(',')
     # Get list of .xeo geometry files from the GeometryFiles path.
     geometry_files = [os.path.join(dirpath, filename).replace('/', '\\')
@@ -138,7 +138,7 @@ class Gui(QMainWindow, Ui_MainWindow):
 
         # Populate dropdown with plate geometries.
         config = configparser.ConfigParser()
-        config.read(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'etc', 'ms1_autox_generator.cfg'))
+        config.read(os.path.join(os.path.dirname(__file__), 'etc', 'ms1_autox_generator.cfg'))
         self.geometry_paths = get_geometry_files(geometry_path=config['GeometryFiles']['path'].replace('/', '\\'))
 
         for key, value in self.geometry_paths.items():
@@ -196,9 +196,9 @@ class Gui(QMainWindow, Ui_MainWindow):
                                                                       'Select GeometryFiles Path...',
                                                                       '').replace('/', '\\')
         config = configparser.ConfigParser()
-        config.read(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'etc', 'ms1_autox_generator.cfg'))
+        config.read(os.path.join(os.path.dirname(__file__), 'etc', 'ms1_autox_generator.cfg'))
         config['GeometryFiles']['path'] = geometry_files_directory
-        with open(os.path.join(os.path.split(os.path.dirname(__file__))[0],
+        with open(os.path.join(os.path.dirname(__file__),
                                'etc',
                                'ms1_autox_generator.cfg'),
                   'w') as config_file:
