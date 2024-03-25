@@ -10,10 +10,16 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QTableWidg
 from ms1_autox_generator_template import Ui_MainWindow
 
 
-# TODO: figure out packaging with pyinstaller?
-
-
 def parse_maldi_plate_map(plate_map_filename):
+    """
+    Parse MALDI plate maps from *.csv files. Example plate maps for 48, 96, 384, 1536, and 6144 format plates are
+    provided.
+
+    :param plate_map_filename: Path to *.csv file containing plate map information.
+    :type plate_map_filename: str
+    :return: Dictionary containing sample names as keys and a list of MALDI plate coordinates as values.
+    :rtype: dict
+    """
     plate_map = pd.read_csv(plate_map_filename, index_col=0)
     plate_dict = {}
     for index, row in plate_map.iterrows():
@@ -30,14 +36,27 @@ def parse_maldi_plate_map(plate_map_filename):
 
 
 def get_geometry_files(geometry_path):
+    """
+    Obtain the list of MALDI plate geometries to be selected from.
+
+    :param geometry_path: Path to the directory containing MALDI plate geometry (*.xeo) files.
+    :type geometry_path: str
+    :return: Dictionary containing the geometry name as keys and the path to the corresponding geometry files as values.
+    :rtype: dict
+    """
+    # Parse config file for inclusion list of acceptable geometries.
     config = configparser.ConfigParser()
     config.read(os.path.join(os.path.dirname(__file__), 'etc', 'ms1_autox_generator.cfg'))
     defaults = config['GeometryFiles']['defaults'].split(',')
+
     # Get list of .xeo geometry files from the GeometryFiles path.
     geometry_files = [os.path.join(dirpath, filename).replace('/', '\\')
                       for dirpath, dirnames, filenames in os.walk(geometry_path)
                       for filename in filenames
                       if os.path.splitext(filename)[1] == '.xeo']
+
+    # Only keep geometry files that are not imaging geometries from flexImaging.
+    # Discard geometry files not found in inclusion list.
     geometry_files_subset = []
     for geometry in geometry_files:
         if os.path.splitext(os.path.split(geometry)[-1])[0] in defaults:
@@ -45,11 +64,30 @@ def get_geometry_files(geometry_path):
                 if 'flexImaging' not in geometry_object.read():
                     geometry_files_subset.append(geometry)
     geometry_files_subset = {os.path.splitext(os.path.split(i)[-1])[0]: i for i in geometry_files_subset}
+
     return geometry_files_subset
 
 
 def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
+    """
+    Generate an AutoXecute sequence (*.run) file.
+
+    :param conditions_dict: Dictionary containing sample names as keys and a list of MALDI plate coordinates as values.
+    :type conditions_dict: dict
+    :param methods: List of methods (*.m files) to be used in the AutoXecute run. Each method is passed to each
+        coordinate to ensure that all each sample is run with each method.
+    :type methods: list[str]
+    :param output_path: Path to the *.run file that will be output.
+    :type output_path: str
+    :param geometry_path: Path to the geometry (*.xeo) file that this AutoXecute sequence will use.
+    :type geometry_path: str
+    :return: String containing any missed coordinates to be written to a log file.
+    :rtype: str
+    """
+    # Stores any error_messages.
     messages = ''
+    # Write out log.
+    log_info = f'MALDI Plate Map: {output_path}\nMALDI Plate Geometry: {geometry_path}\n\nMethods\n'
 
     # Get AutoXecute attribute dict.
     autox_attrib = {'AnalysisSpectraType': 'Single_Spectra',
@@ -85,8 +123,10 @@ def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
     position_names = [element.get('PositionName') for element in geometree.xpath('//PlateSpots//*[@PositionName]')]
 
     # Write new AutoXecute *.run file.
+    # Generate XML tree
     autox = et.Element('table', attrib=autox_attrib)
     for method in methods:
+        log_info += method + '\n'
         for condition, list_of_spots in conditions_dict.items():
             spots_exist = [True if spot in position_names else False for spot in list_of_spots]
             if any(spots_exist):
@@ -106,16 +146,23 @@ def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
             else:
                 messages += (f'All spots for {condition} not found on selected geometry and not added to the '
                              f'Autoxecute Sequence.\n')
+    # Write to *.run file.
     autox_tree = et.ElementTree(autox)
     autox_tree.write(output_path,
                      encoding='utf-8',
                      xml_declaration=True,
                      pretty_print=True)
+    # Write out basic log file.
+    with open(os.path.splitext(output_path)[0] + '.log', 'w') as logfile:
+        logfile.write(log_info)
 
     return messages
 
 
 class Gui(QMainWindow, Ui_MainWindow):
+    """
+    Class for the AutoXecute Sequence Generator GUI developed in PySide6. Inherits formatting from Qt Designer.
+    """
     def __init__(self):
         super(Gui, self).__init__()
 
@@ -132,6 +179,7 @@ class Gui(QMainWindow, Ui_MainWindow):
         self.MethodsTable.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.MethodsTable.setRowCount(0)
 
+        # Initialize attributes.
         self.maldi_plate_map_path = ''
         self.methods = {}
         self.selected_row_from_table = ''
@@ -140,10 +188,10 @@ class Gui(QMainWindow, Ui_MainWindow):
         config = configparser.ConfigParser()
         config.read(os.path.join(os.path.dirname(__file__), 'etc', 'ms1_autox_generator.cfg'))
         self.geometry_paths = get_geometry_files(geometry_path=config['GeometryFiles']['path'].replace('/', '\\'))
-
         for key, value in self.geometry_paths.items():
             self.MaldiPlateGeometryCombo.addItem(key)
 
+        # Connect buttons to methods.
         self.MaldiPlateMapButton.clicked.connect(self.select_maldi_plate_map)
         self.MethodsButton.clicked.connect(self.browse_methods)
         self.MethodsTable.selectionModel().selectionChanged.connect(self.select_from_methods_table)
@@ -152,6 +200,9 @@ class Gui(QMainWindow, Ui_MainWindow):
         self.ChangeGeometryFilesDirectory.triggered.connect(self.change_geometry_files_directory)
 
     def select_maldi_plate_map(self):
+        """
+        Open a file selection dialog to select the MALDI plate map.
+        """
         self.maldi_plate_map_path = QFileDialog().getOpenFileName(self,
                                                                   'Select MALDI Plate Map...',
                                                                   '',
@@ -160,6 +211,9 @@ class Gui(QMainWindow, Ui_MainWindow):
         self.MaldiPlateMapLine.setText(self.maldi_plate_map_path)
 
     def browse_methods(self):
+        """
+        Open a file selection dialog to select a timsControl method (*.m file) or a folder containing multiple methods.
+        """
         methods_path = QFileDialog().getExistingDirectory(self,
                                                           'Select Directory...',
                                                           '')
@@ -184,14 +238,24 @@ class Gui(QMainWindow, Ui_MainWindow):
                 self.MethodsTable.setItem(row, 0, text_item)
 
     def select_from_methods_table(self):
+        """
+        Select a row from the Methods table.
+        """
         self.selected_row_from_table = self.MethodsTable.selectionModel().selectedIndexes()
 
     def remove_methods(self):
+        """
+        Remove any selected methods from the Methods table.
+        """
         for row in sorted([i.row() for i in self.selected_row_from_table], reverse=True):
             del self.methods[self.MethodsTable.item(row, 0).text()]
             self.MethodsTable.removeRow(row)
 
     def change_geometry_files_directory(self):
+        """
+        Edit the directory to load MALDI plate geometry (*.xeo) files from and save the new directory to the config
+        file.
+        """
         geometry_files_directory = QFileDialog().getExistingDirectory(self,
                                                                       'Select GeometryFiles Path...',
                                                                       '').replace('/', '\\')
@@ -208,10 +272,13 @@ class Gui(QMainWindow, Ui_MainWindow):
             self.MaldiPlateGeometryCombo.addItem(key)
 
     def run(self):
+        """
+        Generate the AutoXecute sequence.
+        """
+        # Store error messages.
         err_msg = ''
         if self.maldi_plate_map_path == '':
             err_msg += '- MALDI plate map not selected. Select a plate map (*.csv) to continue.\n'
-
         if not self.methods:
             err_msg += '- No methods selected. Select at least one method to continue.\n'
         if err_msg != '':
@@ -219,6 +286,8 @@ class Gui(QMainWindow, Ui_MainWindow):
             error_msg_box.setWindowTitle('Error')
             error_msg_box.setText(err_msg)
             error_msg_box.exec()
+
+        # Process when all user input satisfied.
         if not self.maldi_plate_map_path == '' and self.methods:
             outfile = QFileDialog().getSaveFileName(self,
                                                     'Save AutoXecute Sequence...',
@@ -228,6 +297,8 @@ class Gui(QMainWindow, Ui_MainWindow):
                                        self.methods,
                                        outfile,
                                        self.geometry_paths[str(self.MaldiPlateGeometryCombo.currentText())])
+
+            # Completion dialog box and any errors.
             finished = QMessageBox(self)
             finished.setWindowTitle('AutoXecute Sequence Generator')
             finished.setText(f'The following AutoXecute Sequence has been created:\n{outfile}')
@@ -245,6 +316,9 @@ class Gui(QMainWindow, Ui_MainWindow):
 
 
 def load_ui():
+    """
+    Load the GUI.
+    """
     app = QApplication([])
     window = Gui()
     window.show()
