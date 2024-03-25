@@ -30,6 +30,9 @@ def parse_maldi_plate_map(plate_map_filename):
 
 
 def get_geometry_files(geometry_path):
+    config = configparser.ConfigParser()
+    config.read(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'etc', 'ms1_autox_generator.cfg'))
+    defaults = config['GeometryFiles']['defaults'].split(',')
     # Get list of .xeo geometry files from the GeometryFiles path.
     geometry_files = [os.path.join(dirpath, filename).replace('/', '\\')
                       for dirpath, dirnames, filenames in os.walk(geometry_path)
@@ -37,9 +40,10 @@ def get_geometry_files(geometry_path):
                       if os.path.splitext(filename)[1] == '.xeo']
     geometry_files_subset = []
     for geometry in geometry_files:
-        with open(geometry, 'r') as geometry_object:
-            if 'flexImaging' not in geometry_object.read():
-                geometry_files_subset.append(geometry)
+        if os.path.splitext(os.path.split(geometry)[-1])[0] in defaults:
+            with open(geometry, 'r') as geometry_object:
+                if 'flexImaging' not in geometry_object.read():
+                    geometry_files_subset.append(geometry)
     geometry_files_subset = {os.path.splitext(os.path.split(i)[-1])[0]: i for i in geometry_files_subset}
     return geometry_files_subset
 
@@ -63,7 +67,6 @@ def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
                     'ejectTargetAfterMeasurement': 'false',
                     'fragmentMass': '0.0',
                     'geometry': geometry_path,
-                    # TODO: or fallback to default geometries
                     'parentMass': '0.0',
                     'stopAfterMsMeasurement': 'false',
                     'targetID': '',
@@ -140,7 +143,6 @@ class Gui(QMainWindow, Ui_MainWindow):
         self.geometry_paths = get_geometry_files(geometry_path=config['GeometryFiles']['path'].replace('/', '\\'))
 
         for key, value in self.geometry_paths.items():
-            # TODO: maybe replace this with hardcoded preselected geometries (only well plate formats, no special chips)
             self.MaldiPlateGeometryCombo.addItem(key)
 
         self.MaldiPlateMapButton.clicked.connect(self.select_maldi_plate_map)
