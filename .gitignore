@@ -1,3 +1,5 @@
 /.idea
 prototype
 */__pycache__
+/build
+/dist
