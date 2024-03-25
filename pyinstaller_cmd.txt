@@ -1,0 +1,1 @@
+pyinstaller ms1_autox_generator.py -D --add-data ./etc/ms1_autox_generator.cfg:etc --noconsole

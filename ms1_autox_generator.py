@@ -70,17 +70,20 @@ def get_geometry_files(geometry_path):
     return geometry_files_subset
 
 
-def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
+def write_autox_seq(conditions_dict, methods, output_path, geometry, geometry_path):
     """
     Generate an AutoXecute sequence (*.run) file.
 
     :param conditions_dict: Dictionary containing sample names as keys and a list of MALDI plate coordinates as values.
     :type conditions_dict: dict
-    :param methods: List of methods (*.m files) to be used in the AutoXecute run. Each method is passed to each
+    :param methods: Dictionary of methods (*.m files) to be used in the AutoXecute run where the key is the method name
+        and the value is the full path to the method. Each method is passed to each
         coordinate to ensure that all each sample is run with each method.
-    :type methods: list[str]
+    :type methods: dict
     :param output_path: Path to the *.run file that will be output.
     :type output_path: str
+    :param geometry: Geometry name that this AutoXecute sequence will use.
+    :type geometry: str
     :param geometry_path: Path to the geometry (*.xeo) file that this AutoXecute sequence will use.
     :type geometry_path: str
     :return: String containing any missed coordinates to be written to a log file.
@@ -106,7 +109,7 @@ def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
                     'doSmoothing': 'false',
                     'ejectTargetAfterMeasurement': 'false',
                     'fragmentMass': '0.0',
-                    'geometry': geometry_path,
+                    'geometry': geometry,
                     'parentMass': '0.0',
                     'stopAfterMsMeasurement': 'false',
                     'targetID': '',
@@ -127,15 +130,15 @@ def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
     # Write new AutoXecute *.run file.
     # Generate XML tree
     autox = et.Element('table', attrib=autox_attrib)
-    for method in methods:
-        log_info += method + '\n'
+    for method_name, method_path in methods.items():
+        log_info += method_path + '\n'
         for condition, list_of_spots in conditions_dict.items():
             spots_exist = [True if spot in position_names else False for spot in list_of_spots]
             if any(spots_exist):
                 spot_group = et.SubElement(autox,
                                            'spot_group',
-                                           attrib={'sampleName': f'{condition}_{os.path.splitext(os.path.split(method)[-1])[0]}',
-                                                   'acqMethod': method})
+                                           attrib={'sampleName': f'{condition}_{os.path.splitext(os.path.split(method_path)[-1])[0]}',
+                                                   'acqMethod': method_path})
                 for spot in list_of_spots:
                     if spot in position_names:
                         cont = et.SubElement(spot_group,
@@ -298,6 +301,7 @@ class Gui(QMainWindow, Ui_MainWindow):
             messages = write_autox_seq(parse_maldi_plate_map(self.maldi_plate_map_path),
                                        self.methods,
                                        outfile,
+                                       str(self.MaldiPlateGeometryCombo.currentText()),
                                        self.geometry_paths[str(self.MaldiPlateGeometryCombo.currentText())])
 
             # Completion dialog box and any errors.
