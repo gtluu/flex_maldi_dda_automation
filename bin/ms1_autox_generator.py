@@ -10,6 +10,9 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QTableWidg
 from ms1_autox_generator_template import Ui_MainWindow
 
 
+# TODO: figure out packaging with pyinstaller?
+
+
 def parse_maldi_plate_map(plate_map_filename):
     plate_map = pd.read_csv(plate_map_filename, index_col=0)
     plate_dict = {}
@@ -48,7 +51,10 @@ def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
     autox_attrib = {'AnalysisSpectraType': 'Single_Spectra',
                     'DataStorage': 'Container',
                     'appname': 'timsControl',
-                    'appVersion': '',  # TODO: figure out how to get installed timsControl version
+                    # Initializes with hardcoded version but checks against currently installed timsControl version if
+                    # available.
+                    # Defaults to Compass 2024b SR1
+                    'appVersion': '5.1.6_67f5008_1',
                     'cleanSourceAfterMeasurement': 'Off',
                     'date': datetime.datetime.now(pytz.timezone(tzlocal.get_localzone_name())).isoformat(),
                     'directory': os.path.split(output_path)[0],
@@ -65,6 +71,11 @@ def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
                     'use1to1Preteaching': 'false',
                     'version': '2.0',
                     'executeExternalCalibration': 'true'}
+
+    # Update timsControl version attribute if installed on the current system.
+    if os.path.isfile('C:\\Program Files\\Bruker\\timsControl\\buildver.txt'):
+        with open('C:\\Program Files\\Bruker\\timsControl\\buildver.txt', 'r') as timscontrol_build_ver:
+            autox_attrib['appVersion'] = timscontrol_build_ver.read().strip()
 
     # Get spot position names from selected geometry file.
     geometree = et.parse(geometry_path)
