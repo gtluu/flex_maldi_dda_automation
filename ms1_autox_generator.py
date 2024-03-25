@@ -9,6 +9,8 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QTableWidg
     QAbstractItemView, QMessageBox
 from ms1_autox_generator_template import Ui_MainWindow
 
+VERSION = '0.1.0'
+
 
 def parse_maldi_plate_map(plate_map_filename):
     """
@@ -87,7 +89,7 @@ def write_autox_seq(conditions_dict, methods, output_path, geometry_path):
     # Stores any error_messages.
     messages = ''
     # Write out log.
-    log_info = f'MALDI Plate Map: {output_path}\nMALDI Plate Geometry: {geometry_path}\n\nMethods\n'
+    log_info = f'Version: {VERSION}\nMALDI Plate Map: {output_path}\nMALDI Plate Geometry: {geometry_path}\n\nMethods\n'
 
     # Get AutoXecute attribute dict.
     autox_attrib = {'AnalysisSpectraType': 'Single_Spectra',
