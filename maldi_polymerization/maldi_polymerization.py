@@ -2,6 +2,7 @@ import os
 import sys
 import copy
 import gc
+import argparse
 from psims.mzml import MzMLWriter
 from pyTDFSDK.init_tdf_sdk import *
 from pyTDFSDK.classes import *
@@ -23,6 +24,44 @@ INSTRUMENT_SOURCE_TYPE = {'0': 'unspecified',
                           '18': 'VIP-HESI'}
 
 
+def get_args():
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--input',
+                        help='One or more MALDI-MS .d directories acquired from the timsTOF fleX in successive '
+                             'AutoXecute runs with different, non-overlapping mass range windows.',
+                        required=True,
+                        type=str,
+                        nargs='+')
+    parser.add_argument('--output',
+                        help='Name of the resulting mzML file.',
+                        default='',
+                        type=str)
+    parser.add_argument('--mode',
+                        help='Choose whether export to spectra in raw or centroid formats. Defaults to centroid.',
+                        default='centroid',
+                        type=str,
+                        choices=['raw', 'centroid', 'profile'])
+    parser.add_argument('--compression',
+                        help='Choose between ZLIB compression (zlib) or no compression (none). Defaults to zlib.',
+                        default='zlib',
+                        type=str,
+                        choices=['zlib', 'none'])
+    parser.add_argument('--encoding',
+                        help='Choose encoding for binary arrays: 32-bit (32) or 64-bit (64). Defaults to 64-bit.',
+                        default=64,
+                        type=int,
+                        choices=[64, 32])
+    parser.add_argument('--barebones_metadata',
+                        help='Only use basic mzML metadata. Use if downstream data analysis tools throw errors with '
+                             'descriptive CV terms.',
+                        action='store_true')
+
+    arguments = parser.parse_args()
+    return vars(arguments)
+
+
 class PartialTsfData(TsfData):
     def __init__(self, bruker_d_folder_name, tdf_sdk, use_recalibrated_state=True):
         super().__init__(bruker_d_folder_name, tdf_sdk, use_recalibrated_state)
@@ -38,8 +77,8 @@ def trim_spectrum(spectrum, lower_mass_range, upper_mass_range):
     return spectrum
 
 
-def i_activate_the_magic_card_polymerization(sorted_dlist_lower, frame, mode, profile_bins, encoding):
-    spectra = [(TsfSpectrum(data, frame, mode, profile_bins, encoding),
+def i_activate_the_magic_card_polymerization(sorted_dlist_lower, frame, mode, encoding):
+    spectra = [(TsfSpectrum(data, frame=frame, mode=mode, profile_bins=0, encoding=encoding),
                 data)
                for data in sorted_dlist_lower]
     spectra = [(trim_spectrum(spectrum, data.MzAcqRangeLower, data.MzAcqRangeUpper),
@@ -142,10 +181,10 @@ def write_fusion_mzml_metadata(writer, dlist, filenames, mode, barebones_metadat
     writer.instrument_configuration_list([inst_config])
 
 
-def write_fusion_mzml(dlist, sorted_dlist_lower, filenames, outfile,
-                      mode, profile_bins, compression, encoding, barebones_metadata):
+def write_fusion_mzml(dlist, sorted_dlist_lower, filenames, output,
+                      mode, compression, encoding, barebones_metadata):
     # initialize mzml writer
-    writer = MzMLWriter(outfile, close=True)
+    writer = MzMLWriter(output, close=True)
     with writer:
         # Write mzML metadata.
         write_fusion_mzml_metadata(writer, dlist, filenames, mode, barebones_metadata)
@@ -166,7 +205,6 @@ def write_fusion_mzml(dlist, sorted_dlist_lower, filenames, outfile,
                         sorted_dlist_lower,
                         frame,
                         mode,
-                        profile_bins,
                         encoding)
                     # Build params list for spectrum.
                     scan_count += 1
@@ -199,20 +237,12 @@ def write_fusion_mzml(dlist, sorted_dlist_lower, filenames, outfile,
 
 
 def run():
-    # tmp params
-    mode = 'profile'
-    profile_bins = 0
-    compression = 'zlib'
-    encoding = 64
-    barebones_metadata = False
-    filenames = ['C:\\Users\\bass\\data\\20240322_autox_windows\\strain1_liloandstitch_mr1.d',
-                 'C:\\Users\\bass\\data\\20240322_autox_windows\\strain1_liloandstitch_mr2.d',
-                 'C:\\Users\\bass\\data\\20240322_autox_windows\\strain1_liloandstitch_mr3.d']
-    outfile = 'C:\\Users\\bass\\data\\20240322_autox_windows\\test.mzML'
+    # get args
+    args = get_args()
 
     # read in datasets
     dll = init_tdf_sdk_api()
-    dlist = [PartialTsfData(dfile, dll) for dfile in filenames]
+    dlist = [PartialTsfData(dfile, dll) for dfile in args['input']]
     # group dataset into a list (random order)
     masses = [x.MzAcqRangeLower for x in dlist] + [x.MzAcqRangeUpper for x in dlist]
     sorted_dlist_lower = sorted(dlist, key=lambda x: x.MzAcqRangeLower)  # sort by low to high lower mass range
@@ -225,7 +255,7 @@ def run():
         for i in range(0, len(dlist) - 1):
             if (not sorted_dlist_lower[i].MzAcqRangeUpper <= sorted_dlist_lower[i + 1].MzAcqRangeLower or
                     not sorted_dlist_upper[i].MzAcqRangeUpper <= sorted_dlist_upper[i + 1].MzAcqRangeLower):
-                print('error')
+                print('Overlapping mass range detected. Check input files.')
                 sys.exit(1)
             else:
                 # third check: make sure the first lower mass range is the lowest value of all and the last upper mass
@@ -234,22 +264,21 @@ def run():
                         not sorted_dlist_upper[0].MzAcqRangeLower == min(masses) or
                         not sorted_dlist_lower[-1].MzAcqRangeUpper == max(masses) or
                         not sorted_dlist_upper[-1].MzAcqRangeUpper == max(masses)):
-                    print('error')
+                    print('Overlapping mass range detected. Check input files.')
                     sys.exit(1)
                 else:
                     # run the workflow
                     write_fusion_mzml(dlist,
                                       sorted_dlist_lower,
-                                      filenames,
-                                      outfile,
-                                      mode,
-                                      profile_bins,
-                                      compression,
-                                      encoding,
-                                      barebones_metadata)
+                                      args['input'],
+                                      args['output'],
+                                      args['mode'],
+                                      args['compression'],
+                                      args['encoding'],
+                                      args['barebones_metadata'])
 
     else:
-        print('error')
+        print('Overlapping mass range detected. Check input files.')
         sys.exit(1)
 
 
