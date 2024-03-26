@@ -1,4 +1,3 @@
-import os
 import sys
 import copy
 import gc
@@ -36,7 +35,7 @@ def get_args():
                         nargs='+')
     parser.add_argument('--output',
                         help='Name of the resulting mzML file.',
-                        default='',
+                        required=True,
                         type=str)
     parser.add_argument('--mode',
                         help='Choose whether export to spectra in raw or centroid formats. Defaults to centroid.',
@@ -239,6 +238,8 @@ def write_fusion_mzml(dlist, sorted_dlist_lower, filenames, output,
 def run():
     # get args
     args = get_args()
+    if not args['output'].endswith('.mzML'):
+        args['output'] = args['output'] + '.mzML'
 
     # read in datasets
     dll = init_tdf_sdk_api()
