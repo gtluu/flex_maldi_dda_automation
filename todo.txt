@@ -1,2 +1,2 @@
 - add docstrings to functions
-- add config file for preprocessing settings
+- currently need to install pyMALDIproc in separate command. fix that later
