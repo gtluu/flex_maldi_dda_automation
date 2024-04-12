@@ -584,6 +584,21 @@ def get_autox_validation_modal_layout(autox_path_dict):
     return modal_divs
 
 
+def get_exclusion_list_layout(df=pd.DataFrame(columns=['m/z'])):
+    return [
+        dash_table.DataTable(
+            df.to_dict('records'),
+            columns=[{'name': str(col), 'id': str(col)} for col in df.columns],
+            id='exclusion_list',
+            style_data_conditional=[]
+        ),
+        dbc.Button('Generate Exclusion List from Blank Spots',
+                   id='generate_exclusion_list_from_blank_spots'),
+        dbc.Button('Upload Exclusion List from CSV', id='upload_exclusion_list_from_csv'),
+        dbc.Button('Clear Exclusion List', id='clear_exclusion_list'),
+    ]
+
+
 def get_dashboard_layout(param_dict, plate_format, autox_path_dict):
     df = get_plate_map(plate_format)
     return html.Div(
@@ -613,12 +628,15 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict):
                        'margin': '20px'}
             ),
             html.Div(
+                get_exclusion_list_layout(),
+                id='exclusion_list_div',
+                className='one column',
+                style={'width': '97%',
+                       'margin': '20px'}
+            ),
+            html.Div(
                 [
                     dbc.Button('Edit Preprocessing Parameters', id='edit_preprocessing_parameters'),
-                    dbc.Button('Generate Exclusion List from Blank Spots', id='generate_exclusion_list_from_blank_spots'),
-                    dbc.Button('Upload Exclusion List from CSV', id='upload_exclusion_list_from_csv'),
-                    dbc.Button('View Current Exclusion List', id='view_current_exclusion_list'),
-                    dbc.Button('Clear Exclusion List', id='clear_exclusion_list'),
                     dbc.Button('Preview Precursor List', id='preview_precursor_list'),
                     dbc.Button('Run', id='run')
                 ]
