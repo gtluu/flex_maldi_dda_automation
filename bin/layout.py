@@ -523,6 +523,7 @@ def get_autox_validation_modal_layout(autox_path_dict):
                         dbc.Input(id={'type': 'raw_data_path_input', 'index': index},
                                   placeholder=path_dict['raw_data_path'],
                                   value=path_dict['raw_data_path'],
+                                  readonly=True,
                                   type='text',
                                   valid=True)
                     ],
@@ -538,6 +539,7 @@ def get_autox_validation_modal_layout(autox_path_dict):
                         dbc.Input(id={'type': 'raw_data_path_input', 'index': index},
                                   placeholder=path_dict['raw_data_path'],
                                   value=path_dict['raw_data_path'],
+                                  readonly=True,
                                   type='text',
                                   invalid=True),
                         dbc.Button('Update Raw Data Path', id={'type': 'raw_data_path_button', 'index': index})
@@ -554,6 +556,7 @@ def get_autox_validation_modal_layout(autox_path_dict):
                         dbc.Input(id={'type': 'method_path_input', 'index': index},
                                   placeholder=path_dict['method_path'],
                                   value=path_dict['method_path'],
+                                  readonly=True,
                                   type='text',
                                   valid=True)
                     ],
@@ -569,6 +572,7 @@ def get_autox_validation_modal_layout(autox_path_dict):
                         dbc.Input(id={'type': 'method_path_input', 'index': index},
                                   placeholder=path_dict['method_path'],
                                   value=path_dict['method_path'],
+                                  readonly=True,
                                   type='text',
                                   invalid=True),
                         dbc.Button('Update Method Path', id={'type': 'method_path_button', 'index': index})
