@@ -596,6 +596,7 @@ def get_dashboard_layout(param_dict, plate_format):
                 ]
             )
         ],
+        className='row',
         style={'justify-content': 'center',
                'display': 'flex'}
     )
