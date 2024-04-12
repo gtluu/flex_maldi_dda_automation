@@ -508,12 +508,78 @@ def get_preprocessing_parameters_layout(param_dict):
             peak_picking_parameters]
 
 
-def get_dashboard_layout(param_dict, plate_format):
+def get_autox_validation_modal_layout(autox):
+    modal_divs = []
+    # check if data and methods exist
+    for spot_group in autox:
+        modal_divs.append(
+            html.H5(spot_group.attrib['sampleName'])
+        )
+        raw_data_path = os.path.join(autox.attrib['directory'], spot_group.attrib['sampleName']) + '.d'
+        if os.path.exists(raw_data_path):
+            modal_divs.append(
+                dbc.InputGroup(
+                    [
+                        dbc.InputGroupText('Raw Data Path'),
+                        dbc.Input(id=f'{html.H5(spot_group.attrib["sampleName"])}_raw_data_path',
+                                  placeholder=raw_data_path,
+                                  value=raw_data_path,
+                                  type='text',
+                                  valid=True)
+                    ]
+                )
+            )
+        elif not os.path.exists(raw_data_path):
+            modal_divs.append(
+                dbc.InputGroup(
+                    [
+                        dbc.InputGroupText('Raw Data Path'),
+                        dbc.Input(id=f'{spot_group.attrib["sampleName"]}_raw_data_path',
+                                  placeholder=raw_data_path,
+                                  value=raw_data_path,
+                                  type='text',
+                                  invalid=True),
+                        dbc.Button('Update Raw Data Path', id=f'{spot_group.attrib["sampleName"]}_raw_data_path_button')
+                    ]
+                )
+            )
+        if os.path.exists(spot_group.attrib['acqMethod']):
+            modal_divs.append(
+                dbc.InputGroup(
+                    [
+                        dbc.InputGroupText('Method Path'),
+                        dbc.Input(id=f'{spot_group.attrib["sampleName"]}_method_path',
+                                  placeholder=spot_group.attrib['acqMethod'],
+                                  value=spot_group.attrib['acqMethod'],
+                                  type='text',
+                                  valid=True)
+                    ]
+                )
+            )
+        elif not os.path.exists(spot_group.attrib['acqMethod']):
+            modal_divs.append(
+                dbc.InputGroup(
+                    [
+                        dbc.InputGroupText('Method Path'),
+                        dbc.Input(id=f'{spot_group.attrib["sampleName"]}_method_path',
+                                  placeholder=spot_group.attrib['acqMethod'],
+                                  value=spot_group.attrib['acqMethod'],
+                                  type='text',
+                                  invalid=True),
+                        dbc.Button('Update Method Path', id=f'{spot_group.attrib["sampleName"]}_method_path_button')
+                    ]
+                )
+            )
+    return modal_divs
+
+
+def get_dashboard_layout(param_dict, plate_format, autox):
     df = get_plate_map(plate_format)
     return html.Div(
         [
             html.Div(
                 [
+                    # TODO: should have grayed out theme for spots that were not found in the .run file
                     dash_table.DataTable(
                         df.to_dict('records'),
                         columns=[{'name': str(col), 'id': str(col)} for col in df.columns],
@@ -548,6 +614,17 @@ def get_dashboard_layout(param_dict, plate_format):
             ),
             dcc.Loading(
                 dcc.Store(id='store_plot')
+            ),
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle('Loaded AutoXecute Sequence')),
+                    dbc.ModalBody(get_autox_validation_modal_layout(autox)),
+                    dbc.ModalFooter(dbc.Button('Close', id='autox_validation_modal_close', className='ms-auto'))
+                ],
+                id='autox_validation_modal',
+                size='lg',
+                centered=True,
+                is_open=True
             ),
             dbc.Modal(
                 [

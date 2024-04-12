@@ -19,7 +19,7 @@ PREPROCESSING_PARAMS = get_preprocessing_params()
 # get AutoXecute sequence path
 AUTOX_SEQ = get_autox_sequence_filename()
 
-# TODO: parse plate map, data directory, methods directory, and check if exists on system here
+# TODO: data directory, methods directory, and check if exists on system here
 # read in AutoXecute sequence
 ms1_autox = et.parse(AUTOX_SEQ).getroot()
 # parse plate map
@@ -30,7 +30,7 @@ BLANK_SPOTS = []
 app = DashProxy(prevent_initial_callbacks=True,
                 transforms=[MultiplexerTransform(), ServersideOutputTransform()],
                 external_stylesheets=[dbc.themes.BOOTSTRAP])
-app.layout = get_dashboard_layout(PREPROCESSING_PARAMS, PLATE_FORMAT)
+app.layout = get_dashboard_layout(PREPROCESSING_PARAMS, PLATE_FORMAT, ms1_autox)
 
 
 @app.callback(Output('plate_map', 'style_data_conditional'),
