@@ -508,72 +508,79 @@ def get_preprocessing_parameters_layout(param_dict):
             peak_picking_parameters]
 
 
-def get_autox_validation_modal_layout(autox):
+def get_autox_validation_modal_layout(autox_path_dict):
     modal_divs = []
     # check if data and methods exist
-    for spot_group in autox:
+    for index, path_dict in autox_path_dict.items():
         modal_divs.append(
-            html.H5(spot_group.attrib['sampleName'])
+            html.H5(path_dict['sample_name'])
         )
-        raw_data_path = os.path.join(autox.attrib['directory'], spot_group.attrib['sampleName']) + '.d'
-        if os.path.exists(raw_data_path):
+        if os.path.exists(path_dict['raw_data_path']):
             modal_divs.append(
                 dbc.InputGroup(
                     [
                         dbc.InputGroupText('Raw Data Path'),
-                        dbc.Input(id=f'{html.H5(spot_group.attrib["sampleName"])}_raw_data_path',
-                                  placeholder=raw_data_path,
-                                  value=raw_data_path,
+                        dbc.Input(id={'type': 'raw_data_path_input', 'index': index},
+                                  placeholder=path_dict['raw_data_path'],
+                                  value=path_dict['raw_data_path'],
                                   type='text',
                                   valid=True)
-                    ]
+                    ],
+                    style={'margin': '10px',
+                           'display': 'flex'}
                 )
             )
-        elif not os.path.exists(raw_data_path):
+        elif not os.path.exists(path_dict['raw_data_path']):
             modal_divs.append(
                 dbc.InputGroup(
                     [
                         dbc.InputGroupText('Raw Data Path'),
-                        dbc.Input(id=f'{spot_group.attrib["sampleName"]}_raw_data_path',
-                                  placeholder=raw_data_path,
-                                  value=raw_data_path,
+                        dbc.Input(id={'type': 'raw_data_path_input', 'index': index},
+                                  placeholder=path_dict['raw_data_path'],
+                                  value=path_dict['raw_data_path'],
                                   type='text',
                                   invalid=True),
-                        dbc.Button('Update Raw Data Path', id=f'{spot_group.attrib["sampleName"]}_raw_data_path_button')
-                    ]
+                        dbc.Button('Update Raw Data Path', id={'type': 'raw_data_path_button', 'index': index})
+                    ],
+                    style={'margin': '10px',
+                           'display': 'flex'}
                 )
             )
-        if os.path.exists(spot_group.attrib['acqMethod']):
+        if os.path.exists(path_dict['method_path']):
             modal_divs.append(
                 dbc.InputGroup(
                     [
                         dbc.InputGroupText('Method Path'),
-                        dbc.Input(id=f'{spot_group.attrib["sampleName"]}_method_path',
-                                  placeholder=spot_group.attrib['acqMethod'],
-                                  value=spot_group.attrib['acqMethod'],
+                        dbc.Input(id={'type': 'method_path_input', 'index': index},
+                                  placeholder=path_dict['method_path'],
+                                  value=path_dict['method_path'],
                                   type='text',
                                   valid=True)
-                    ]
+                    ],
+                    style={'margin': '10px',
+                           'display': 'flex'}
                 )
             )
-        elif not os.path.exists(spot_group.attrib['acqMethod']):
+        elif not os.path.exists(path_dict['method_path']):
             modal_divs.append(
                 dbc.InputGroup(
                     [
                         dbc.InputGroupText('Method Path'),
-                        dbc.Input(id=f'{spot_group.attrib["sampleName"]}_method_path',
-                                  placeholder=spot_group.attrib['acqMethod'],
-                                  value=spot_group.attrib['acqMethod'],
+                        dbc.Input(id={'type': 'method_path_input', 'index': index},
+                                  placeholder=path_dict['method_path'],
+                                  value=path_dict['method_path'],
                                   type='text',
                                   invalid=True),
-                        dbc.Button('Update Method Path', id=f'{spot_group.attrib["sampleName"]}_method_path_button')
-                    ]
+                        dbc.Button('Update Method Path', id={'type': 'method_path_button', 'index': index})
+                    ],
+                    style={'margin': '10px',
+                           'display': 'flex'}
                 )
             )
     return modal_divs
 
 
-def get_dashboard_layout(param_dict, plate_format, autox):
+def get_dashboard_layout(param_dict, plate_format, autox_path_dict):
     df = get_plate_map(plate_format)
     return html.Div(
         [
@@ -617,12 +624,17 @@ def get_dashboard_layout(param_dict, plate_format, autox):
             ),
             dbc.Modal(
                 [
-                    dbc.ModalHeader(dbc.ModalTitle('Loaded AutoXecute Sequence')),
-                    dbc.ModalBody(get_autox_validation_modal_layout(autox)),
-                    dbc.ModalFooter(dbc.Button('Close', id='autox_validation_modal_close', className='ms-auto'))
+                    dbc.ModalHeader(dbc.ModalTitle('Loaded AutoXecute Sequence'), close_button=False),
+                    dbc.ModalBody(get_autox_validation_modal_layout(autox_path_dict)),
+                    dbc.ModalFooter(dbc.Button('Close',
+                                               id='autox_validation_modal_close',
+                                               className='ms-auto'))
                 ],
                 id='autox_validation_modal',
-                size='lg',
+                fullscreen=True,
+                backdrop='static',
+                keyboard=False,
+                scrollable=True,
                 centered=True,
                 is_open=True
             ),
