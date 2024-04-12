@@ -37,7 +37,7 @@ app = DashProxy(prevent_initial_callbacks=True,
 app.layout = get_dashboard_layout(PREPROCESSING_PARAMS, PLATE_FORMAT, AUTOX_PATH_DICT)
 
 
-# TODO: add callbacks for autox validation and preprocessing, exclusion list, preview, run buttons
+# TODO: add callbacks for exclusion list, preview, run buttons
 @app.callback([Output({'type': 'raw_data_path_input', 'index': MATCH}, 'value'),
                Output({'type': 'raw_data_path_input', 'index': MATCH}, 'valid'),
                Output({'type': 'raw_data_path_input', 'index': MATCH}, 'invalid')],

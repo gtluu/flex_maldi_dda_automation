@@ -589,6 +589,7 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict):
     return html.Div(
         [
             html.Div(
+                # TODO: add legend for blank
                 [
                     # TODO: should have grayed out theme for spots that were not found in the .run file
                     dash_table.DataTable(
@@ -597,6 +598,13 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict):
                         id='plate_map',
                         style_header={'display': 'none'},
                         style_data_conditional=[]
+                    ),
+                    dbc.Button(
+                        'Mark Spots as Blank',
+                        id='mark_spot_as_blank',
+                        style={'margin': '20px',
+                               'display': 'flex',
+                               'justify-content': 'center'}
                     )
                 ],
                 id='plate_map_div',
@@ -604,10 +612,8 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict):
                 style={'width': '97%',
                        'margin': '20px'}
             ),
-            # TODO: add legend for blank
             html.Div(
                 [
-                    dbc.Button('Mark Spots as Blank', id='mark_spot_as_blank'),
                     dbc.Button('Edit Preprocessing Parameters', id='edit_preprocessing_parameters'),
                     dbc.Button('Generate Exclusion List from Blank Spots', id='generate_exclusion_list_from_blank_spots'),
                     dbc.Button('Upload Exclusion List from CSV', id='upload_exclusion_list_from_csv'),
@@ -637,7 +643,7 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict):
                 id='autox_validation_modal',
                 fullscreen=True,
                 backdrop='static',
-                keyboard=False,
+                #keyboard=False,  # TODO: re-enable this in final version
                 scrollable=True,
                 centered=True,
                 is_open=True
