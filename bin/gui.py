@@ -162,6 +162,9 @@ def clear_exclusion_list(n_clicks):
         return pd.DataFrame(columns=['m/z']).to_dict('records')
 
 
+# TODO: add preprocessing buttons for flex_maldi_dda_automation parameters (top n precursors, tolerances, etc)
+# TODO: move align spectra and exclusion list processing params to new modal when clicking "Generate Exclusion List"
+# TODO: preprocessing params modal pops up when clicking "Preview" or "Run"; remove "Edit Preprocessing parameters"
 @app.callback(Output('edit_processing_parameters_modal', 'is_open'),
               [Input('edit_preprocessing_parameters', 'n_clicks'),
                Input('edit_processing_parameters_save', 'n_clicks'),
