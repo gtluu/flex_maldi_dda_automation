@@ -12,6 +12,11 @@ def get_preprocessing_parameters_layout(param_dict):
     trim_spectrum_parameters = html.Div(
         [
             html.H5('Spectrum Trimming Parameters'),
+            dbc.Checkbox(
+                id='trim_spectrum_checkbox',
+                label='Trim Spectrum',
+                value=param_dict['TRIM_SPECTRUM']['run']
+            ),
             dbc.InputGroup(
                 [
                     dbc.InputGroupText('Lower Mass Range'),
@@ -46,7 +51,12 @@ def get_preprocessing_parameters_layout(param_dict):
     transform_intensity_parameters = html.Div(
         [
             html.H5('Intensity Transformation Parameters'),
-            html.P('Method'),
+            dbc.Checkbox(
+                id='transform_intensity_checkbox',
+                label='Transform Intensity',
+                value=param_dict['TRANSFORM_INTENSITY']['run']
+            ),
+            html.P('Method', id='transform_intensity_method_label'),
             dbc.RadioItems(
                 id='transform_intensity_method',
                 options=[
@@ -71,7 +81,12 @@ def get_preprocessing_parameters_layout(param_dict):
     smooth_baseline_parameters = html.Div(
         [
             html.H5('Baseline Smoothing Parameters'),
-            html.P('Method'),
+            dbc.Checkbox(
+                id='smooth_baseline_checkbox',
+                label='Smooth Baseline',
+                value=param_dict['SMOOTH_BASELINE']['run']
+            ),
+            html.P('Method', id='smooth_baseline_method_label'),
             dbc.RadioItems(
                 id='smooth_baseline_method',
                 options=[
@@ -153,7 +168,12 @@ def get_preprocessing_parameters_layout(param_dict):
     remove_baseline_parameters = html.Div(
         [
             html.H5('Baseline Removal Parameters'),
-            html.P('Method'),
+            dbc.Checkbox(
+                id='remove_baseline_checkbox',
+                label='Remove Baseline',
+                value=param_dict['REMOVE_BASELINE']['run']
+            ),
+            html.P('Method', id='remove_baseline_method_label'),
             dbc.RadioItems(
                 id='remove_baseline_method',
                 options=[
@@ -379,7 +399,12 @@ def get_preprocessing_parameters_layout(param_dict):
     normalize_intensity_parameters = html.Div(
         [
             html.H5('Intensity Normalization Parameters'),
-            html.P('Method'),
+            dbc.Checkbox(
+                id='normalize_intensity_checkbox',
+                label='Normalize Intensity',
+                value=param_dict['NORMALIZE_INTENSITY']['run']
+            ),
+            html.P('Method', id='normalize_intensity_method_label'),
             dbc.RadioItems(
                 id='normalize_intensity_method',
                 options=[
@@ -404,6 +429,11 @@ def get_preprocessing_parameters_layout(param_dict):
     bin_spectrum_parameters = html.Div(
         [
             html.H5('Spectrum Binning Parameters'),
+            dbc.Checkbox(
+                id='bin_spectrum_checkbox',
+                label='Bin Spectrum',
+                value=param_dict['BIN_SPECTRUM']['run']
+            ),
             dbc.InputGroup(
                 [
                     dbc.InputGroupText('Number of Bins'),

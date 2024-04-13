@@ -15,6 +15,14 @@ import dash_bootstrap_components as dbc
 
 # default processing parameters from config file
 PREPROCESSING_PARAMS = get_preprocessing_params()
+PREPROCESSING_PARAMS['TRIM_SPECTRUM']['run'] = False
+PREPROCESSING_PARAMS['TRANSFORM_INTENSITY']['run'] = False
+PREPROCESSING_PARAMS['SMOOTH_BASELINE']['run'] = False
+PREPROCESSING_PARAMS['REMOVE_BASELINE']['run'] = False
+PREPROCESSING_PARAMS['NORMALIZE_INTENSITY']['run'] = False
+PREPROCESSING_PARAMS['BIN_SPECTRUM']['run'] = False
+PREPROCESSING_PARAMS['ALIGN_SPECTRA'] = {}
+PREPROCESSING_PARAMS['ALIGN_SPECTRA']['run'] = False
 
 # get AutoXecute sequence path
 AUTOX_SEQ = get_autox_sequence_filename()
@@ -145,7 +153,6 @@ def clear_exclusion_list(n_clicks):
         return pd.DataFrame(columns=['m/z']).to_dict('records')
 
 
-# TODO: add checkboxes to enable or disable processing steps
 @app.callback(Output('edit_processing_parameters_modal', 'is_open'),
               [Input('edit_preprocessing_parameters', 'n_clicks'),
                Input('edit_processing_parameters_save', 'n_clicks'),
@@ -265,26 +272,65 @@ def toggle_edit_processing_parameters_saved_modal(n_clicks_save, n_clicks_close,
     return is_open
 
 
-@app.callback([Output('smooth_baseline_window_length', 'style'),
+@app.callback([Output('trim_spectrum_lower_mass_range', 'style'),
+               Output('trim_spectrum_upper_mass_range', 'style')],
+              [Input('edit_preprocessing_parameters', 'n_clicks'),
+               Input('trim_spectrum_checkbox', 'value')])
+def toggle_trim_spectrum_parameters(n_clicks, value):
+    if value:
+        return [copy.deepcopy(SHOWN),
+                copy.deepcopy(SHOWN)]
+    elif not value:
+        return [copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN)]
+
+
+@app.callback([Output('transform_intensity_method_label', 'style'),
+               Output('transform_intensity_method', 'style')],
+              [Input('edit_preprocessing_parameters', 'n_clicks'),
+               Input('transform_intensity_checkbox', 'value')])
+def toggle_transform_intensity_parameters(n_clicks, value):
+    if value:
+        return [copy.deepcopy(SHOWN),
+                copy.deepcopy(SHOWN)]
+    elif not value:
+        return [copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN)]
+
+
+@app.callback([Output('smooth_baseline_method_label', 'style'),
+               Output('smooth_baseline_method', 'style'),
+               Output('smooth_baseline_window_length', 'style'),
                Output('smooth_baseline_polyorder', 'style'),
                Output('smooth_baseline_delta_mz', 'style'),
                Output('smooth_baseline_diff_thresh', 'style')],
               [Input('edit_preprocessing_parameters', 'n_clicks'),
+               Input('smooth_baseline_checkbox', 'value'),
                Input('smooth_baseline_method', 'value')])
-def toggle_smooth_baseline_method_parameters(n_clicks, value):
-    if value == 'SavitzkyGolay':
-        return toggle_savitzky_golay_style()
-    elif value == 'apodization':
-        return toggle_apodization_style()
-    elif value == 'rebin':
-        return toggle_rebin_style()
-    elif value == 'fast_change':
-        return toggle_fast_change_style()
-    elif value == 'median':
-        return toggle_smoothing_median_style()
+def toggle_smooth_baseline_method_parameters(n_clicks, smooth_baseline_checkbox, smooth_baseline_method):
+    if smooth_baseline_checkbox:
+        if smooth_baseline_method == 'SavitzkyGolay':
+            return [copy.deepcopy(SHOWN), copy.deepcopy(SHOWN)] + toggle_savitzky_golay_style()
+        elif smooth_baseline_method == 'apodization':
+            return [copy.deepcopy(SHOWN), copy.deepcopy(SHOWN)] + toggle_apodization_style()
+        elif smooth_baseline_method == 'rebin':
+            return [copy.deepcopy(SHOWN), copy.deepcopy(SHOWN)] + toggle_rebin_style()
+        elif smooth_baseline_method == 'fast_change':
+            return [copy.deepcopy(SHOWN), copy.deepcopy(SHOWN)] + toggle_fast_change_style()
+        elif smooth_baseline_method == 'median':
+            return [copy.deepcopy(SHOWN), copy.deepcopy(SHOWN)] + toggle_smoothing_median_style()
+    elif not smooth_baseline_checkbox:
+        return [copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN)]
 
 
-@app.callback([Output('remove_baseline_min_half_window', 'style'),
+@app.callback([Output('remove_baseline_method_label', 'style'),
+               Output('remove_baseline_method', 'style'),
+               Output('remove_baseline_min_half_window', 'style'),
                Output('remove_baseline_max_half_window', 'style'),
                Output('remove_baseline_decreasing', 'style'),
                Output('remove_baseline_smooth_half_window', 'style'),
@@ -299,20 +345,68 @@ def toggle_smooth_baseline_method_parameters(n_clicks, value):
                Output('remove_baseline_degree', 'style'),
                Output('remove_baseline_gradient', 'style')],
               [Input('edit_preprocessing_parameters', 'n_clicks'),
+               Input('remove_baseline_checkbox', 'value'),
                Input('remove_baseline_method', 'value')])
-def toggle_remove_baseline_method_parameters(n_clicks, value):
-    if value == 'SNIP':
-        return toggle_snip_style()
-    elif value == 'TopHat':
-        return toggle_tophat_style()
-    elif value == 'Median':
-        return toggle_removal_median_style()
-    elif value == 'ZhangFit':
-        return toggle_zhangfit_style()
-    elif value == 'ModPoly':
-        return toggle_modpoly_style()
-    elif value == 'IModPoly':
-        return toggle_imodpoly_style()
+def toggle_remove_baseline_method_parameters(n_clicks, remove_baseline_checkbox, remove_baseline_method):
+    if remove_baseline_checkbox:
+        if remove_baseline_method == 'SNIP':
+            return [copy.deepcopy(SHOWN), copy.deepcopy(SHOWN)] + toggle_snip_style()
+        elif remove_baseline_method == 'TopHat':
+            return [copy.deepcopy(SHOWN), copy.deepcopy(SHOWN)] + toggle_tophat_style()
+        elif remove_baseline_method == 'Median':
+            return [copy.deepcopy(SHOWN), copy.deepcopy(SHOWN)] + toggle_removal_median_style()
+        elif remove_baseline_method == 'ZhangFit':
+            return [copy.deepcopy(SHOWN), copy.deepcopy(SHOWN)] + toggle_zhangfit_style()
+        elif remove_baseline_method == 'ModPoly':
+            return [copy.deepcopy(SHOWN), copy.deepcopy(SHOWN)] + toggle_modpoly_style()
+        elif remove_baseline_method == 'IModPoly':
+            return [copy.deepcopy(SHOWN), copy.deepcopy(SHOWN)] + toggle_imodpoly_style()
+    elif not remove_baseline_checkbox:
+        return [copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN)]
+
+
+@app.callback([Output('normalize_intensity_method_label', 'style'),
+               Output('normalize_intensity_method', 'style')],
+              [Input('edit_preprocessing_parameters', 'n_clicks'),
+               Input('normalize_intensity_checkbox', 'value')])
+def toggle_normalize_intensity_parameters(n_clicks, value):
+    if value:
+        return [copy.deepcopy(SHOWN),
+                copy.deepcopy(SHOWN)]
+    elif not value:
+        return [copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN)]
+
+
+@app.callback([Output('bin_spectrum_n_bins', 'style'),
+               Output('bin_spectrum_lower_mass_range', 'style'),
+               Output('bin_spectrum_upper_mass_range', 'style')],
+              [Input('edit_preprocessing_parameters', 'n_clicks'),
+               Input('bin_spectrum_checkbox', 'value')])
+def toggle_bin_spectrum_parameters(n_clicks, value):
+    if value:
+        return [copy.deepcopy(SHOWN),
+                copy.deepcopy(SHOWN),
+                copy.deepcopy(SHOWN)]
+    elif not value:
+        return [copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN),
+                copy.deepcopy(HIDDEN)]
 
 
 @app.callback([Output('peak_picking_snr', 'style'),
