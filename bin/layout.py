@@ -620,6 +620,13 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict):
                         style={'margin': '20px',
                                'display': 'flex',
                                'justify-content': 'center'}
+                    ),
+                    dbc.Button(
+                        'Clear Blank Spots',
+                        id='clear_blank_spots',
+                        style={'margin': '20px',
+                               'display': 'flex',
+                               'justify-content': 'center'}
                     )
                 ],
                 id='plate_map_div',

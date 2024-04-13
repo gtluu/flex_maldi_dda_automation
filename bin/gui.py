@@ -104,6 +104,48 @@ def mark_spots_as_blank(n_clicks, spots, cell_style, data):
                          for row, col in indices]
 
 
+@app.callback(Output('plate_map', 'style_data_conditional'),
+              Input('clear_blank_spots', 'n_clicks'))
+def clear_blank_spots(n_clicks):
+    global BLANK_SPOTS
+    changed_id = [i['prop_id'] for i in callback_context.triggered][0]
+    if changed_id == 'clear_blank_spots.n_clicks':
+        BLANK_SPOTS = []
+        return []
+
+
+"""@ app.callback()
+def generate_exclusion_list_from_blank_spots():
+    pass"""
+
+
+@app.callback(Output('exclusion_list', 'data'),
+              Input('upload_exclusion_list_from_csv', 'n_clicks'),
+              State('exclusion_list', 'data'))
+def upload_exclusion_list_from_csv(n_clicks, exclusion_list):
+    changed_id = [i['prop_id'] for i in callback_context.triggered][0]
+    if changed_id == 'upload_exclusion_list_from_csv.n_clicks':
+        main_tk_window = tkinter.Tk()
+        main_tk_window.attributes('-topmost', True, '-alpha', 0)
+        filename = askopenfilename(filetypes=[('Comma Separated Value', '*.csv')])
+        main_tk_window.destroy()
+        exclusion_list_df = pd.read_csv(filename)
+        if exclusion_list_df.shape[1] == 1 and exclusion_list_df.columns[0] == 'm/z':
+            return exclusion_list_df.to_dict('records')
+        else:
+            # TODO: "csv not valid. ensure only one column named m/z is present"
+            pass
+
+
+@app.callback(Output('exclusion_list', 'data'),
+              Input('clear_exclusion_list', 'n_clicks'))
+def clear_exclusion_list(n_clicks):
+    changed_id = [i['prop_id'] for i in callback_context.triggered][0]
+    if changed_id == 'clear_exclusion_list.n_clicks':
+        return pd.DataFrame(columns=['m/z']).to_dict('records')
+
+
+# TODO: add checkboxes to enable or disable processing steps
 @app.callback(Output('edit_processing_parameters_modal', 'is_open'),
               [Input('edit_preprocessing_parameters', 'n_clicks'),
                Input('edit_processing_parameters_save', 'n_clicks'),
