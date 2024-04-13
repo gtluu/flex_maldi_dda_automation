@@ -445,7 +445,8 @@ def get_preprocessing_parameters_layout(param_dict):
                               step=100)
                 ],
                 id='bin_spectrum_n_bins',
-                style={'margin': '10px'}
+                style={'margin': '10px',
+                       'display': 'flex'}
             ),
             dbc.InputGroup(
                 [
@@ -458,7 +459,8 @@ def get_preprocessing_parameters_layout(param_dict):
                               step=1)
                 ],
                 id='bin_spectrum_lower_mass_range',
-                style={'margin': '10px'}
+                style={'margin': '10px',
+                       'display': 'flex'}
             ),
             dbc.InputGroup(
                 [
@@ -471,10 +473,158 @@ def get_preprocessing_parameters_layout(param_dict):
                               step=1)
                 ],
                 id='bin_spectrum_upper_mass_range',
-                style={'margin': '10px'}
+                style={'margin': '10px',
+                       'display': 'flex'}
             )
         ],
         id='bin_spectrum_parameters',
+        style={'margin': '20px'}
+    )
+
+    align_spectra_parameters = html.Div(
+        [
+            html.H5('Spectra Alignment Parameters (Only Used for Exclusion List Generation from Blank Spots)'),
+            dbc.Checkbox(
+                id='align_spectra_checkbox',
+                label='Align Spectra (Only Used for Exclusion List Generation from Blank Spots)',
+                value=param_dict['ALIGN_SPECTRA']['run']
+            ),
+            html.P('Method', id='align_spectra_method_label'),
+            dbc.RadioItems(
+                id='align_spectra_method',
+                options=[
+                    {'label': 'Average', 'value': 'average'},
+                    {'label': 'Median', 'value': 'median'},
+                    {'label': 'Max', 'value': 'max'},
+                    {'label': 'Average2', 'value': 'average2'}
+                ],
+                value=param_dict['ALIGN_SPECTRA']['method'],
+                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
+                inputStyle={'margin-right': '10px'},
+                className='btn-group',
+                inputClassName='btn-check',
+                labelClassName='btn btn-outline-primary',
+                labelCheckedClassName='active',
+            ),
+            html.P('Definition of Alignment Mode', id='align_spectra_inter_label'),
+            dbc.RadioItems(
+                id='align_spectra_inter',
+                options=[
+                    {'label': 'Whole', 'value': 'whole'},
+                    {'label': 'Number of Many Intervals', 'value': 'nint'},
+                    {'label': 'Length of Regular Intervals', 'value': 'ndata'}
+                ],
+                value=param_dict['ALIGN_SPECTRA']['inter'],
+                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
+                inputStyle={'margin-right': '10px'},
+                className='btn-group',
+                inputClassName='btn-check',
+                labelClassName='btn btn-outline-primary',
+                labelCheckedClassName='active',
+            ),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Number of Many Intervals'),
+                    dbc.Input(id='align_spectra_inter_nint_value',
+                              placeholder=100,
+                              value=100,
+                              type='number',
+                              min=1,
+                              step=1)
+                ],
+                id='align_spectra_inter_nint',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            html.P('n for Each Interval', id='align_spectra_n_label'),
+            dbc.RadioItems(
+                id='align_spectra_n',
+                options=[
+                    {'label': 'Fast', 'value': 'f'},
+                    {'label': 'Best', 'value': 'b'},
+                    {'label': 'Integer', 'value': 'integer'}
+                ],
+                value=param_dict['ALIGN_SPECTRA']['n'],
+                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
+                inputStyle={'margin-right': '10px'},
+                className='btn-group',
+                inputClassName='btn-check',
+                labelClassName='btn btn-outline-primary',
+                labelCheckedClassName='active',
+            ),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Maximum Shift Correction in Data Points/Scale Units'),
+                    dbc.Input(id='align_spectra_n_integer_value',
+                              placeholder=1,
+                              value=1,
+                              type='number',
+                              min=1,
+                              step=1)
+                ],
+                id='align_spectra_n_integer',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            # skipping scale parameter
+            dbc.RadioItems(
+                id='align_spectra_coshift_preprocessing',
+                options=[
+                    {'label': 'Execute Co-Shift Step Before Alignment', 'value': True},
+                    {'label': 'Do Not Perform Co-Shift Step', 'value': False}
+                ],
+                value=param_dict['ALIGN_SPECTRA']['coshift_preprocessing'],
+                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
+                inputStyle={'margin-right': '10px'},
+                className='btn-group',
+                inputClassName='btn-check',
+                labelClassName='btn btn-outline-primary',
+                labelCheckedClassName='active',
+            ),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Co-Shift Preprocessing Max Shift'),
+                    dbc.Input(id='align_spectra_coshift_preprocessing_max_shift_value',
+                              placeholder=param_dict['ALIGN_SPECTRA']['coshift_preprocessing_max_shift'],
+                              value=param_dict['ALIGN_SPECTRA']['coshift_preprocessing_max_shift'],
+                              type='number',
+                              min=1,
+                              step=1)
+                ],
+                id='align_spectra_coshift_preprocessing_max_shift',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.RadioItems(
+                id='align_spectra_fill_with_previous',
+                options=[
+                    {'label': 'Fill with Previous Point', 'value': True},
+                    {'label': 'Set to NaN', 'value': False}
+                ],
+                value=param_dict['ALIGN_SPECTRA']['fill_with_previous'],
+                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
+                inputStyle={'margin-right': '10px'},
+                className='btn-group',
+                inputClassName='btn-check',
+                labelClassName='btn btn-outline-primary',
+                labelCheckedClassName='active',
+            ),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Average2 Multiplier'),
+                    dbc.Input(id='align_spectra_average2_multiplier_value',
+                              placeholder=param_dict['ALIGN_SPECTRA']['average2_multiplier'],
+                              value=param_dict['ALIGN_SPECTRA']['average2_multiplier'],
+                              type='number',
+                              min=1,
+                              step=1)
+                ],
+                id='align_spectra_average2_multiplier',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            )
+        ],
+        id='align_spectra_parameters',
         style={'margin': '20px'}
     )
 
@@ -535,6 +685,7 @@ def get_preprocessing_parameters_layout(param_dict):
             remove_baseline_parameters,
             normalize_intensity_parameters,
             bin_spectrum_parameters,
+            align_spectra_parameters,
             peak_picking_parameters]
 
 

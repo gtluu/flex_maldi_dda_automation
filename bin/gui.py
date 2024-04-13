@@ -12,7 +12,6 @@ from dash import State, callback_context, no_update, dash_table, MATCH, ALL
 from dash_extensions.enrich import Input, Output, DashProxy, MultiplexerTransform, Serverside, ServersideOutputTransform
 import dash_bootstrap_components as dbc
 
-
 # default processing parameters from config file
 PREPROCESSING_PARAMS = get_preprocessing_params()
 PREPROCESSING_PARAMS['TRIM_SPECTRUM']['run'] = False
@@ -21,8 +20,18 @@ PREPROCESSING_PARAMS['SMOOTH_BASELINE']['run'] = False
 PREPROCESSING_PARAMS['REMOVE_BASELINE']['run'] = False
 PREPROCESSING_PARAMS['NORMALIZE_INTENSITY']['run'] = False
 PREPROCESSING_PARAMS['BIN_SPECTRUM']['run'] = False
-PREPROCESSING_PARAMS['ALIGN_SPECTRA'] = {}
-PREPROCESSING_PARAMS['ALIGN_SPECTRA']['run'] = False
+config = configparser.ConfigParser()
+config.read(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'etc', 'preprocessing.cfg'))
+PREPROCESSING_PARAMS['ALIGN_SPECTRA'] = {'run': False,
+                                         'method': config['align_spectra']['method'],
+                                         'inter': config['align_spectra']['inter'],
+                                         'n': config['align_spectra']['n'],
+                                         'scale': None,
+                                         'coshift_preprocessing': config['align_spectra'].getboolean(
+                                             'coshift_preprocessing'),
+                                         'coshift_preprocessing_max_shift': None,
+                                         'fill_with_previous': config['align_spectra'].getboolean('fill_with_previous'),
+                                         'average2_multiplier': int(config['align_spectra']['average2_multiplier'])}
 
 # get AutoXecute sequence path
 AUTOX_SEQ = get_autox_sequence_filename()
@@ -157,14 +166,18 @@ def clear_exclusion_list(n_clicks):
               [Input('edit_preprocessing_parameters', 'n_clicks'),
                Input('edit_processing_parameters_save', 'n_clicks'),
                Input('edit_processing_parameters_cancel', 'n_clicks'),
+               Input('trim_spectrum_checkbox', 'value'),
                Input('trim_spectrum_lower_mass_range_value', 'value'),
                Input('trim_spectrum_upper_mass_range_value', 'value'),
+               Input('transform_intensity_checkbox', 'value'),
                Input('transform_intensity_method', 'value'),
+               Input('smooth_baseline_checkbox', 'value'),
                Input('smooth_baseline_method', 'value'),
                Input('smooth_baseline_window_length_value', 'value'),
                Input('smooth_baseline_polyorder_value', 'value'),
                Input('smooth_baseline_delta_mz_value', 'value'),
                Input('smooth_baseline_diff_thresh_value', 'value'),
+               Input('remove_baseline_checkbox', 'value'),
                Input('remove_baseline_method', 'value'),
                Input('remove_baseline_min_half_window_value', 'value'),
                Input('remove_baseline_max_half_window_value', 'value'),
@@ -180,10 +193,22 @@ def clear_exclusion_list(n_clicks):
                Input('remove_baseline_repetition_value', 'value'),
                Input('remove_baseline_degree_value', 'value'),
                Input('remove_baseline_gradient_value', 'value'),
+               Input('normalize_intensity_checkbox', 'value'),
                Input('normalize_intensity_method', 'value'),
+               Input('bin_spectrum_checkbox', 'value'),
                Input('bin_spectrum_n_bins_value', 'value'),
                Input('bin_spectrum_lower_mass_range_value', 'value'),
                Input('bin_spectrum_upper_mass_range_value', 'value'),
+               Input('align_spectra_checkbox', 'value'),
+               Input('align_spectra_method', 'value'),
+               Input('align_spectra_inter', 'value'),
+               Input('align_spectra_inter_nint_value', 'value'),
+               Input('align_spectra_n', 'value'),
+               Input('align_spectra_n_integer_value', 'value'),
+               Input('align_spectra_coshift_preprocessing', 'value'),
+               Input('align_spectra_coshift_preprocessing_max_shift_value', 'value'),
+               Input('align_spectra_fill_with_previous', 'value'),
+               Input('align_spectra_average2_multiplier_value', 'value'),
                Input('peak_picking_method', 'value'),
                Input('peak_picking_snr_value', 'value'),
                Input('peak_picking_widths_value', 'value')],
@@ -191,14 +216,18 @@ def clear_exclusion_list(n_clicks):
 def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
                                                n_clicks_save,
                                                n_clicks_cancel,
+                                               trim_spectrum_checkbox,
                                                trim_spectrum_lower_mass_range,
                                                trim_spectrum_upper_mass_range,
+                                               transform_intensity_checkbox,
                                                transform_intensity_method,
+                                               smooth_baseline_checkbox,
                                                smooth_baseline_method,
                                                smooth_baseline_window_length,
                                                smooth_baseline_polyorder,
                                                smooth_baseline_delta_mz,
                                                smooth_baseline_diff_thresh,
+                                               remove_baseline_checkbox,
                                                remove_baseline_method,
                                                remove_baseline_min_half_window,
                                                remove_baseline_max_half_window,
@@ -214,10 +243,22 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
                                                remove_baseline_repetition,
                                                remove_baseline_degree,
                                                remove_baseline_gradient,
+                                               normalize_intensity_checkbox,
                                                normalize_intensity_method,
+                                               bin_spectrum_checkbox,
                                                bin_spectrum_n_bins,
                                                bin_spectrum_lower_mass_range,
                                                bin_spectrum_upper_mass_range,
+                                               align_spectra_checkbox,
+                                               align_spectra_method,
+                                               align_spectra_inter,
+                                               align_spectra_inter_nint_value,
+                                               align_spectra_n,
+                                               align_spectra_n_integer_value,
+                                               align_spectra_coshift_preprocessing,
+                                               align_spectra_coshift_preprocessing_max_shift_value,
+                                               align_spectra_fill_with_previous,
+                                               align_spectra_average2_multiplier_value,
                                                peak_picking_method,
                                                peak_picking_snr,
                                                peak_picking_widths,
@@ -228,14 +269,18 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
             changed_id == 'edit_processing_parameters_save.n_clicks' or
             changed_id == 'edit_processing_parameters_cancel.n_clicks'):
         if changed_id == 'edit_processing_parameters_save.n_clicks':
+            PREPROCESSING_PARAMS['TRIM_SPECTRUM']['run'] = trim_spectrum_checkbox
             PREPROCESSING_PARAMS['TRIM_SPECTRUM']['lower_mass_range'] = trim_spectrum_lower_mass_range
             PREPROCESSING_PARAMS['TRIM_SPECTRUM']['upper_mass_range'] = trim_spectrum_upper_mass_range
+            PREPROCESSING_PARAMS['TRANSFORM_INTENSITY']['run'] = transform_intensity_checkbox
             PREPROCESSING_PARAMS['TRANSFORM_INTENSITY']['method'] = transform_intensity_method
+            PREPROCESSING_PARAMS['SMOOTH_BASELINE']['run'] = smooth_baseline_checkbox
             PREPROCESSING_PARAMS['SMOOTH_BASELINE']['method'] = smooth_baseline_method
             PREPROCESSING_PARAMS['SMOOTH_BASELINE']['window_length'] = smooth_baseline_window_length
             PREPROCESSING_PARAMS['SMOOTH_BASELINE']['polyorder'] = smooth_baseline_polyorder
             PREPROCESSING_PARAMS['SMOOTH_BASELINE']['delta_mz'] = smooth_baseline_delta_mz
             PREPROCESSING_PARAMS['SMOOTH_BASELINE']['diff_thresh'] = smooth_baseline_diff_thresh
+            PREPROCESSING_PARAMS['REMOVE_BASELINE']['run'] = remove_baseline_checkbox
             PREPROCESSING_PARAMS['REMOVE_BASELINE']['method'] = remove_baseline_method
             PREPROCESSING_PARAMS['REMOVE_BASELINE']['min_half_window'] = remove_baseline_min_half_window
             PREPROCESSING_PARAMS['REMOVE_BASELINE']['max_half_window'] = remove_baseline_max_half_window
@@ -251,10 +296,27 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
             PREPROCESSING_PARAMS['REMOVE_BASELINE']['repetition'] = remove_baseline_repetition
             PREPROCESSING_PARAMS['REMOVE_BASELINE']['degree'] = remove_baseline_degree
             PREPROCESSING_PARAMS['REMOVE_BASELINE']['gradient'] = remove_baseline_gradient
+            PREPROCESSING_PARAMS['NORMALIZE_INTENSITY']['run'] = normalize_intensity_checkbox
             PREPROCESSING_PARAMS['NORMALIZE_INTENSITY']['method'] = normalize_intensity_method
+            PREPROCESSING_PARAMS['BIN_SPECTRUM']['run'] = bin_spectrum_checkbox
             PREPROCESSING_PARAMS['BIN_SPECTRUM']['n_bins'] = bin_spectrum_n_bins
             PREPROCESSING_PARAMS['BIN_SPECTRUM']['lower_mass_range'] = bin_spectrum_lower_mass_range
             PREPROCESSING_PARAMS['BIN_SPECTRUM']['upper_mass_range'] = bin_spectrum_upper_mass_range
+            PREPROCESSING_PARAMS['ALIGN_SPECTRA']['run'] = align_spectra_checkbox
+            PREPROCESSING_PARAMS['ALIGN_SPECTRA']['method'] = align_spectra_method
+            if align_spectra_inter == 'whole' or align_spectra_inter == 'ndata':
+                PREPROCESSING_PARAMS['ALIGN_SPECTRA']['inter'] = align_spectra_inter
+            elif align_spectra_inter == 'nint':
+                PREPROCESSING_PARAMS['ALIGN_SPECTRA']['inter'] = align_spectra_inter_nint_value
+            if align_spectra_n == 'f' or align_spectra_n == 'b':
+                PREPROCESSING_PARAMS['ALIGN_SPECTRA']['n'] = align_spectra_n
+            elif align_spectra_n == 'integer':
+                PREPROCESSING_PARAMS['ALIGN_SPECTRA']['n'] = align_spectra_n_integer_value
+            PREPROCESSING_PARAMS['ALIGN_SPECTRA']['coshift_preprocessing'] = align_spectra_coshift_preprocessing
+            PREPROCESSING_PARAMS['ALIGN_SPECTRA'][
+                'coshift_preprocessing_max_shift'] = align_spectra_coshift_preprocessing_max_shift_value
+            PREPROCESSING_PARAMS['ALIGN_SPECTRA']['fill_with_previous'] = align_spectra_fill_with_previous
+            PREPROCESSING_PARAMS['ALIGN_SPECTRA']['average2_multiplier'] = align_spectra_average2_multiplier_value
             PREPROCESSING_PARAMS['PEAK_PICKING']['method'] = peak_picking_method
             PREPROCESSING_PARAMS['PEAK_PICKING']['snr'] = peak_picking_snr
             PREPROCESSING_PARAMS['PEAK_PICKING']['widths'] = peak_picking_widths
@@ -407,6 +469,60 @@ def toggle_bin_spectrum_parameters(n_clicks, value):
         return [copy.deepcopy(HIDDEN),
                 copy.deepcopy(HIDDEN),
                 copy.deepcopy(HIDDEN)]
+
+
+@app.callback([Output('align_spectra_method_label', 'style'),
+               Output('align_spectra_method', 'style'),
+               Output('align_spectra_inter_label', 'style'),
+               Output('align_spectra_inter', 'style'),
+               Output('align_spectra_inter_nint', 'style'),
+               Output('align_spectra_n_label', 'style'),
+               Output('align_spectra_n', 'style'),
+               Output('align_spectra_n_integer', 'style'),
+               Output('align_spectra_coshift_preprocessing', 'style'),
+               Output('align_spectra_coshift_preprocessing_max_shift', 'style'),
+               Output('align_spectra_fill_with_previous', 'style'),
+               Output('align_spectra_average2_multiplier', 'style')],
+              [Input('edit_preprocessing_parameters', 'n_clicks'),
+               Input('align_spectra_checkbox', 'value'),
+               Input('align_spectra_method', 'value'),
+               Input('align_spectra_inter', 'value'),
+               Input('align_spectra_n', 'value')])
+def toggle_align_spectra_parameters(n_clicks, align_spectra_checkbox, align_spectra_method, align_spectra_inter, align_spectra_n):
+    default_hidden = [copy.deepcopy(HIDDEN),
+                      copy.deepcopy(HIDDEN),
+                      copy.deepcopy(HIDDEN),
+                      copy.deepcopy(HIDDEN),
+                      copy.deepcopy(HIDDEN),
+                      copy.deepcopy(HIDDEN),
+                      copy.deepcopy(HIDDEN),
+                      copy.deepcopy(HIDDEN),
+                      copy.deepcopy(HIDDEN),
+                      copy.deepcopy(HIDDEN),
+                      copy.deepcopy(HIDDEN),
+                      copy.deepcopy(HIDDEN)]
+    default_shown = [copy.deepcopy(SHOWN),
+                     copy.deepcopy(SHOWN),
+                     copy.deepcopy(SHOWN),
+                     copy.deepcopy(SHOWN),
+                     copy.deepcopy(SHOWN),
+                     copy.deepcopy(SHOWN),
+                     copy.deepcopy(SHOWN),
+                     copy.deepcopy(SHOWN),
+                     copy.deepcopy(SHOWN),
+                     copy.deepcopy(SHOWN),
+                     copy.deepcopy(SHOWN),
+                     copy.deepcopy(SHOWN)]
+    if align_spectra_checkbox:
+        if align_spectra_method == 'average' or align_spectra_method == 'median' or align_spectra_method == 'max':
+            default_shown[11] = HIDDEN
+        if align_spectra_inter == 'whole' or align_spectra_inter == 'ndata':
+            default_shown[4] = HIDDEN
+        if align_spectra_n == 'f' or align_spectra_n == 'b':
+            default_shown[7] = HIDDEN
+        return default_shown
+    elif not align_spectra_checkbox:
+        return default_hidden
 
 
 @app.callback([Output('peak_picking_snr', 'style'),
