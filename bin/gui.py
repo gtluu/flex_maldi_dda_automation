@@ -46,6 +46,8 @@ AUTOX_PATH_DICT = {index: {'sample_name': spot_group.attrib['sampleName'],
                            'method_path': spot_group.attrib['acqMethod']}
                    for index, spot_group in enumerate(MS1_AUTOX)}
 
+INDEXED_DATA = {}
+
 BLANK_SPOTS = []
 
 app = DashProxy(prevent_initial_callbacks=True,
@@ -95,14 +97,23 @@ def update_method_path(n_clicks, button_id):
 
 @app.callback(Output('autox_validation_modal', 'is_open'),
               Input('autox_validation_modal_close', 'n_clicks'),
-              [State({'type': 'raw_data_path_input', 'index': ALL}, 'valid'),
+              [State({'type': 'raw_data_path_input', 'index': ALL}, 'value'),
+               State({'type': 'raw_data_path_input', 'index': ALL}, 'valid'),
                State({'type': 'method_path_input', 'index': ALL}, 'valid'),
                State('autox_validation_modal', 'is_open')])
-def toggle_autox_validation_modal_close(n_clicks, raw_data_path_input_valid, method_path_input_valid, is_open):
+def toggle_autox_validation_modal_close(n_clicks, raw_data_path_input, raw_data_path_input_valid,
+                                        method_path_input_valid, is_open):
+    global INDEXED_DATA
     if n_clicks:
         for i, j in zip(raw_data_path_input_valid, method_path_input_valid):
             if not i or not j:
                 return is_open
+        # TODO: write data parsing code here; once all paths valid
+        for path in raw_data_path_input:
+            data = import_timstof_raw_data(path, mode='profile')
+            for spectrum in data:
+                INDEXED_DATA[spectrum.coord] = spectrum
+                print(INDEXED_DATA)
         return not is_open
     return is_open
 
@@ -131,6 +142,8 @@ def clear_blank_spots(n_clicks):
         return []
 
 
+# maybe...
+# TODO: will need to have another spectrum shown with exclusion list that plots the average spectrum and labels peaks used to generate exclusion list
 """@ app.callback()
 def generate_exclusion_list_from_blank_spots():
     pass"""
