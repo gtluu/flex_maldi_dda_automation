@@ -8,7 +8,7 @@ import dash_bootstrap_components as dbc
 from bin.util import *
 
 
-def get_preprocessing_parameters_layout(param_dict, include_precursor_selection=False):
+def get_preprocessing_parameters_layout(param_dict):
     trim_spectrum_parameters = html.Div(
         [
             html.H5('Spectrum Trimming Parameters'),
@@ -723,7 +723,9 @@ def get_preprocessing_parameters_layout(param_dict, include_precursor_selection=
                 style={'margin': '10px',
                        'display': 'flex'}
             )
-        ]
+        ],
+        id='precursor_selection_parameters',
+        style={'margin': '20px'}
     )
 
     return [trim_spectrum_parameters,
