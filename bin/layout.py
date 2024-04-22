@@ -889,17 +889,16 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict):
             ),
             dbc.Modal(
                 [
-                    dbc.ModalHeader(dbc.ModalTitle('Exclusion List')),
-                    dbc.ModalBody(),
-                    dbc.ModalFooter(
-                        dbc.ButtonGroup(
-                            [
-                                dbc.Button('Cancel', id='exclusion_list_cancel', className='ms-auto'),
-                                dbc.Button('Save', id='exclusion_list_save', className='ms-auto')
-                            ]
-                        )
-                    )
-                ]
+                    dbc.ModalHeader(dbc.ModalTitle('Error')),
+                    dbc.ModalBody('Selected CSV file is not valid. Ensure only one column named "m/z" is present.'),
+                    dbc.ModalFooter(dbc.Button('Close',
+                                               id='exclusion_list_csv_error_modal_close',
+                                               className='ms-auto'))
+                ],
+                id='exclusion_list_csv_error_modal',
+                size='lg',
+                centered=True,
+                is_open=False
             )
         ],
         className='row',

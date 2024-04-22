@@ -195,10 +195,12 @@ def generate_exclusion_list_from_blank_spots(n_clicks):
         return exclusion_list_df.to_dict('records')
 
 
-@app.callback(Output('exclusion_list', 'data'),
+@app.callback([Output('exclusion_list', 'data'),
+               Output('exclusion_list_csv_error_modal', 'is_open')],
               Input('upload_exclusion_list_from_csv', 'n_clicks'),
-              State('exclusion_list', 'data'))
-def upload_exclusion_list_from_csv(n_clicks, exclusion_list):
+              [State('exclusion_list', 'data'),
+               State('exclusion_list_csv_error_modal', 'is_open')])
+def upload_exclusion_list_from_csv(n_clicks, exclusion_list, exclusion_list_csv_error_modal_is_open):
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'upload_exclusion_list_from_csv.n_clicks':
         main_tk_window = tkinter.Tk()
@@ -207,10 +209,18 @@ def upload_exclusion_list_from_csv(n_clicks, exclusion_list):
         main_tk_window.destroy()
         exclusion_list_df = pd.read_csv(filename)
         if exclusion_list_df.shape[1] == 1 and exclusion_list_df.columns[0] == 'm/z':
-            return exclusion_list_df.to_dict('records')
+            return exclusion_list_df.to_dict('records'), exclusion_list_csv_error_modal_is_open
         else:
-            # TODO: "csv not valid. ensure only one column named m/z is present"
-            pass
+            return exclusion_list, True
+
+
+@app.callback(Output('exclusion_list_csv_error_modal', 'is_open'),
+              Input('exclusion_list_csv_error_modal_close', 'n_clicks'),
+              State('exclusion_list_csv_error_modal', 'is_open'))
+def toggle_exclusion_list_csv_error_modal(n_clicks, is_open):
+    if n_clicks:
+        return not is_open
+    return is_open
 
 
 @app.callback(Output('exclusion_list', 'data'),
@@ -533,7 +543,7 @@ def toggle_bin_spectrum_parameters(n_clicks, value):
                 copy.deepcopy(HIDDEN)]
 
 
-@app.callback([Output('align_spectra_method_label', 'style'),
+"""@app.callback([Output('align_spectra_method_label', 'style'),
                Output('align_spectra_method', 'style'),
                Output('align_spectra_inter_label', 'style'),
                Output('align_spectra_inter', 'style'),
@@ -585,7 +595,7 @@ def toggle_align_spectra_parameters(n_clicks, align_spectra_checkbox, align_spec
             default_shown[7] = HIDDEN
         return default_shown
     elif not align_spectra_checkbox:
-        return default_hidden
+        return default_hidden"""
 
 
 @app.callback([Output('peak_picking_snr', 'style'),
