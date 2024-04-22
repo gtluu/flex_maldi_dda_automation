@@ -848,17 +848,11 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict):
                     ),
                     dbc.Button(
                         'Mark Spots as Blank',
-                        id='mark_spot_as_blank',
-                        style={'margin': '20px',
-                               'display': 'flex',
-                               'justify-content': 'center'}
+                        id='mark_spot_as_blank'
                     ),
                     dbc.Button(
                         'Clear Blank Spots',
-                        id='clear_blank_spots',
-                        style={'margin': '20px',
-                               'display': 'flex',
-                               'justify-content': 'center'}
+                        id='clear_blank_spots'
                     )
                 ],
                 id='plate_map_div',
@@ -876,9 +870,12 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict):
             html.Div(
                 [
                     dbc.Button('Edit Preprocessing Parameters', id='edit_preprocessing_parameters'),
-                    dbc.Button('Preview Precursor List', id='preview_precursor_list'),
-                    dbc.Button('Run', id='run')
-                ]
+                    dbc.Button('Preview Precursor List', id='preview_precursor_list')
+                ],
+                id='precursor_processing_div',
+                className='one column',
+                style={'width': '97%',
+                       'margin': '20px'}
             ),
             html.Div(
                 id='spectrum',
