@@ -21,7 +21,7 @@ PREPROCESSING_PARAMS['SMOOTH_BASELINE']['run'] = False
 PREPROCESSING_PARAMS['REMOVE_BASELINE']['run'] = False
 PREPROCESSING_PARAMS['NORMALIZE_INTENSITY']['run'] = False
 PREPROCESSING_PARAMS['BIN_SPECTRUM']['run'] = False
-config = configparser.ConfigParser()
+"""config = configparser.ConfigParser()
 config.read(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'etc', 'preprocessing.cfg'))
 PREPROCESSING_PARAMS['ALIGN_SPECTRA'] = {'run': False,
                                          'method': config['align_spectra']['method'],
@@ -32,7 +32,7 @@ PREPROCESSING_PARAMS['ALIGN_SPECTRA'] = {'run': False,
                                              'coshift_preprocessing'),
                                          'coshift_preprocessing_max_shift': None,
                                          'fill_with_previous': config['align_spectra'].getboolean('fill_with_previous'),
-                                         'average2_multiplier': int(config['align_spectra']['average2_multiplier'])}
+                                         'average2_multiplier': int(config['align_spectra']['average2_multiplier'])}"""
 
 # get AutoXecute sequence path
 AUTOX_SEQ = get_autox_sequence_filename()
@@ -179,10 +179,10 @@ def generate_exclusion_list_from_blank_spots(n_clicks):
             del params['BIN_SPECTRUM']['run']
             for spectrum in blank_spectra:
                 spectrum.bin_spectrum(**params['BIN_SPECTRUM'])
-        # TODO: will need to ensure spectra are binned before alignment
+        """# TODO: will need to ensure spectra are binned before alignment
         if params['ALIGN_SPECTRA']['run']:
             del params['ALIGN_SPECTRA']['run']
-            blank_spectra = align_spectra(blank_spectra, **params['ALIGN_SPECTRA'])
+            blank_spectra = align_spectra(blank_spectra, **params['ALIGN_SPECTRA'])"""
         # peak picking
         for spectrum in blank_spectra:
             spectrum.peak_picking(**params['PEAK_PICKING'])
@@ -261,16 +261,16 @@ def clear_exclusion_list(n_clicks):
                Input('bin_spectrum_n_bins_value', 'value'),
                Input('bin_spectrum_lower_mass_range_value', 'value'),
                Input('bin_spectrum_upper_mass_range_value', 'value'),
-               Input('align_spectra_checkbox', 'value'),
-               Input('align_spectra_method', 'value'),
-               Input('align_spectra_inter', 'value'),
-               Input('align_spectra_inter_nint_value', 'value'),
-               Input('align_spectra_n', 'value'),
-               Input('align_spectra_n_integer_value', 'value'),
-               Input('align_spectra_coshift_preprocessing', 'value'),
-               Input('align_spectra_coshift_preprocessing_max_shift_value', 'value'),
-               Input('align_spectra_fill_with_previous', 'value'),
-               Input('align_spectra_average2_multiplier_value', 'value'),
+               #Input('align_spectra_checkbox', 'value'),
+               #Input('align_spectra_method', 'value'),
+               #Input('align_spectra_inter', 'value'),
+               #Input('align_spectra_inter_nint_value', 'value'),
+               #Input('align_spectra_n', 'value'),
+               #Input('align_spectra_n_integer_value', 'value'),
+               #Input('align_spectra_coshift_preprocessing', 'value'),
+               #Input('align_spectra_coshift_preprocessing_max_shift_value', 'value'),
+               #Input('align_spectra_fill_with_previous', 'value'),
+               #Input('align_spectra_average2_multiplier_value', 'value'),
                Input('peak_picking_method', 'value'),
                Input('peak_picking_snr_value', 'value'),
                Input('peak_picking_widths_value', 'value')],
@@ -311,16 +311,16 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
                                                bin_spectrum_n_bins,
                                                bin_spectrum_lower_mass_range,
                                                bin_spectrum_upper_mass_range,
-                                               align_spectra_checkbox,
-                                               align_spectra_method,
-                                               align_spectra_inter,
-                                               align_spectra_inter_nint_value,
-                                               align_spectra_n,
-                                               align_spectra_n_integer_value,
-                                               align_spectra_coshift_preprocessing,
-                                               align_spectra_coshift_preprocessing_max_shift_value,
-                                               align_spectra_fill_with_previous,
-                                               align_spectra_average2_multiplier_value,
+                                               #align_spectra_checkbox,
+                                               #align_spectra_method,
+                                               #align_spectra_inter,
+                                               #align_spectra_inter_nint_value,
+                                               #align_spectra_n,
+                                               #align_spectra_n_integer_value,
+                                               #align_spectra_coshift_preprocessing,
+                                               #align_spectra_coshift_preprocessing_max_shift_value,
+                                               #align_spectra_fill_with_previous,
+                                               #align_spectra_average2_multiplier_value,
                                                peak_picking_method,
                                                peak_picking_snr,
                                                peak_picking_widths,
@@ -364,7 +364,7 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
             PREPROCESSING_PARAMS['BIN_SPECTRUM']['n_bins'] = bin_spectrum_n_bins
             PREPROCESSING_PARAMS['BIN_SPECTRUM']['lower_mass_range'] = bin_spectrum_lower_mass_range
             PREPROCESSING_PARAMS['BIN_SPECTRUM']['upper_mass_range'] = bin_spectrum_upper_mass_range
-            PREPROCESSING_PARAMS['ALIGN_SPECTRA']['run'] = align_spectra_checkbox
+            """PREPROCESSING_PARAMS['ALIGN_SPECTRA']['run'] = align_spectra_checkbox
             PREPROCESSING_PARAMS['ALIGN_SPECTRA']['method'] = align_spectra_method
             if align_spectra_inter == 'whole' or align_spectra_inter == 'ndata':
                 PREPROCESSING_PARAMS['ALIGN_SPECTRA']['inter'] = align_spectra_inter
@@ -378,7 +378,7 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
             PREPROCESSING_PARAMS['ALIGN_SPECTRA'][
                 'coshift_preprocessing_max_shift'] = align_spectra_coshift_preprocessing_max_shift_value
             PREPROCESSING_PARAMS['ALIGN_SPECTRA']['fill_with_previous'] = align_spectra_fill_with_previous
-            PREPROCESSING_PARAMS['ALIGN_SPECTRA']['average2_multiplier'] = align_spectra_average2_multiplier_value
+            PREPROCESSING_PARAMS['ALIGN_SPECTRA']['average2_multiplier'] = align_spectra_average2_multiplier_value"""
             PREPROCESSING_PARAMS['PEAK_PICKING']['method'] = peak_picking_method
             PREPROCESSING_PARAMS['PEAK_PICKING']['snr'] = peak_picking_snr
             PREPROCESSING_PARAMS['PEAK_PICKING']['widths'] = peak_picking_widths

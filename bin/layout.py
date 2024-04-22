@@ -481,7 +481,7 @@ def get_preprocessing_parameters_layout(param_dict):
         style={'margin': '20px'}
     )
 
-    align_spectra_parameters = html.Div(
+    """align_spectra_parameters = html.Div(
         [
             html.H5('Spectra Alignment Parameters (Only Used for Exclusion List Generation from Blank Spots)'),
             dbc.Checkbox(
@@ -626,7 +626,7 @@ def get_preprocessing_parameters_layout(param_dict):
         ],
         id='align_spectra_parameters',
         style={'margin': '20px'}
-    )
+    )"""
 
     peak_picking_parameters = html.Div(
         [
@@ -685,7 +685,7 @@ def get_preprocessing_parameters_layout(param_dict):
             remove_baseline_parameters,
             normalize_intensity_parameters,
             bin_spectrum_parameters,
-            align_spectra_parameters,
+            #align_spectra_parameters,
             peak_picking_parameters]
 
 
