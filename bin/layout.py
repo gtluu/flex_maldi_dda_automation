@@ -765,13 +765,14 @@ def get_autox_validation_modal_layout(autox_path_dict):
     return modal_divs
 
 
-def get_exclusion_list_layout(df=pd.DataFrame(columns=['m/z'])):
+def get_exclusion_list_layout():
     return [
         dash_table.DataTable(
-            df.to_dict('records'),
-            columns=[{'name': str(col), 'id': str(col)} for col in df.columns],
+            data=[],
+            columns=[{'name': 'm/z', 'id': 'm/z'}],
             id='exclusion_list',
-            style_data_conditional=[]
+            style_data_conditional=[],
+            page_size=10
         ),
         dbc.Button('Generate Exclusion List from Blank Spots',
                    id='generate_exclusion_list_from_blank_spots'),
@@ -849,7 +850,7 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict):
                 id='autox_validation_modal',
                 fullscreen=True,
                 backdrop='static',
-                #keyboard=False,  # TODO: re-enable this in final version
+                keyboard=False,
                 scrollable=True,
                 centered=True,
                 is_open=True

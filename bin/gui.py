@@ -5,6 +5,7 @@ import configparser
 import pandas as pd
 from lxml import etree as et
 from pymaldiproc.data_import import import_mzml, import_timstof_raw_data
+from pymaldiproc.preprocessing import align_spectra, get_feature_matrix
 from pymaldiviz.util import *
 from bin.layout import *
 from bin.util import *
@@ -56,7 +57,7 @@ app = DashProxy(prevent_initial_callbacks=True,
 app.layout = get_dashboard_layout(PREPROCESSING_PARAMS, PLATE_FORMAT, AUTOX_PATH_DICT)
 
 
-# TODO: add callbacks for exclusion list, preview, run buttons
+# TODO: add callbacks for preview, run buttons
 @app.callback([Output({'type': 'raw_data_path_input', 'index': MATCH}, 'value'),
                Output({'type': 'raw_data_path_input', 'index': MATCH}, 'valid'),
                Output({'type': 'raw_data_path_input', 'index': MATCH}, 'invalid')],
@@ -108,12 +109,10 @@ def toggle_autox_validation_modal_close(n_clicks, raw_data_path_input, raw_data_
         for i, j in zip(raw_data_path_input_valid, method_path_input_valid):
             if not i or not j:
                 return is_open
-        # TODO: write data parsing code here; once all paths valid
         for path in raw_data_path_input:
             data = import_timstof_raw_data(path, mode='profile')
             for spectrum in data:
                 INDEXED_DATA[spectrum.coord] = spectrum
-                print(INDEXED_DATA)
         return not is_open
     return is_open
 
@@ -143,10 +142,57 @@ def clear_blank_spots(n_clicks):
 
 
 # maybe...
-# TODO: will need to have another spectrum shown with exclusion list that plots the average spectrum and labels peaks used to generate exclusion list
-"""@ app.callback()
-def generate_exclusion_list_from_blank_spots():
-    pass"""
+# TODO: will need to have another spectrum shown with exclusion list that plots the average spectrum and labels peaks
+#  used to generate exclusion list
+@ app.callback(Output('exclusion_list', 'data'),
+               Input('generate_exclusion_list_from_blank_spots', 'n_clicks'))
+def generate_exclusion_list_from_blank_spots(n_clicks):
+    global INDEXED_DATA
+    global BLANK_SPOTS
+    global PREPROCESSING_PARAMS
+    changed_id = [i['prop_id'] for i in callback_context.triggered][0]
+    if changed_id == 'generate_exclusion_list_from_blank_spots.n_clicks':
+        blank_spectra = [INDEXED_DATA[spot] for spot in BLANK_SPOTS]
+        params = copy.deepcopy(PREPROCESSING_PARAMS)
+        # preprocessing
+        if params['TRIM_SPECTRUM']['run']:
+            del params['TRIM_SPECTRUM']['run']
+            for spectrum in blank_spectra:
+                spectrum.trim_spectrum(**params['TRIM_SPECTRUM'])
+        if params['TRANSFORM_INTENSITY']['run']:
+            del params['TRANSFORM_INTENSITY']['run']
+            for spectrum in blank_spectra:
+                spectrum.transform_intensity(**params['TRANSFORM_INTENSITY'])
+        if params['SMOOTH_BASELINE']['run']:
+            del params['SMOOTH_BASELINE']['run']
+            for spectrum in blank_spectra:
+                spectrum.smooth_baseline(**params['SMOOTH_BASELINE'])
+        if params['REMOVE_BASELINE']['run']:
+            del params['REMOVE_BASELINE']['run']
+            for spectrum in blank_spectra:
+                spectrum.remove_baseline(**params['REMOVE_BASELINE'])
+        if params['NORMALIZE_INTENSITY']['run']:
+            del params['NORMALIZE_INTENSITY']['run']
+            for spectrum in blank_spectra:
+                spectrum.normalize_intensity(**params['NORMALIZE_INTENSITY'])
+        if params['BIN_SPECTRUM']['run']:
+            del params['BIN_SPECTRUM']['run']
+            for spectrum in blank_spectra:
+                spectrum.bin_spectrum(**params['BIN_SPECTRUM'])
+        # TODO: will need to ensure spectra are binned before alignment
+        if params['ALIGN_SPECTRA']['run']:
+            del params['ALIGN_SPECTRA']['run']
+            blank_spectra = align_spectra(blank_spectra, **params['ALIGN_SPECTRA'])
+        # peak picking
+        for spectrum in blank_spectra:
+            spectrum.peak_picking(**params['PEAK_PICKING'])
+        # generate feature matrix
+        blank_feature_matrix = get_feature_matrix(blank_spectra, missing_value_imputation=False)
+        # round?
+        #blank_feature_matrix = blank_feature_matrix.round(2)
+        # get exclusion list and return as df.to_dict('records')
+        exclusion_list_df = pd.DataFrame(data={'m/z': np.unique(blank_feature_matrix['mz'].values)})
+        return exclusion_list_df.to_dict('records')
 
 
 @app.callback(Output('exclusion_list', 'data'),
@@ -504,7 +550,8 @@ def toggle_bin_spectrum_parameters(n_clicks, value):
                Input('align_spectra_method', 'value'),
                Input('align_spectra_inter', 'value'),
                Input('align_spectra_n', 'value')])
-def toggle_align_spectra_parameters(n_clicks, align_spectra_checkbox, align_spectra_method, align_spectra_inter, align_spectra_n):
+def toggle_align_spectra_parameters(n_clicks, align_spectra_checkbox, align_spectra_method, align_spectra_inter,
+                                    align_spectra_n):
     default_hidden = [copy.deepcopy(HIDDEN),
                       copy.deepcopy(HIDDEN),
                       copy.deepcopy(HIDDEN),
