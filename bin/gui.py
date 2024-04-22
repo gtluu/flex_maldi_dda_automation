@@ -33,6 +33,9 @@ PREPROCESSING_PARAMS['ALIGN_SPECTRA'] = {'run': False,
                                          'coshift_preprocessing_max_shift': None,
                                          'fill_with_previous': config['align_spectra'].getboolean('fill_with_previous'),
                                          'average2_multiplier': int(config['align_spectra']['average2_multiplier'])}"""
+PREPROCESSING_PARAMS['PRECURSOR_SELECTION'] = {'top_n': 10,
+                                               'use_exclusion_list': True,
+                                               'exclusion_list_tolerance': 0.1}
 
 # get AutoXecute sequence path
 AUTOX_SEQ = get_autox_sequence_filename()
@@ -231,7 +234,6 @@ def clear_exclusion_list(n_clicks):
         return pd.DataFrame(columns=['m/z']).to_dict('records')
 
 
-# TODO: add preprocessing buttons for flex_maldi_dda_automation parameters (top n precursors, tolerances, etc)
 # TODO: move align spectra and exclusion list processing params to new modal when clicking "Generate Exclusion List"
 # TODO: preprocessing params modal pops up when clicking "Preview" or "Run"; remove "Edit Preprocessing parameters"
 @app.callback(Output('edit_processing_parameters_modal', 'is_open'),
@@ -283,7 +285,10 @@ def clear_exclusion_list(n_clicks):
                #Input('align_spectra_average2_multiplier_value', 'value'),
                Input('peak_picking_method', 'value'),
                Input('peak_picking_snr_value', 'value'),
-               Input('peak_picking_widths_value', 'value')],
+               Input('peak_picking_widths_value', 'value'),
+               Input('precursor_selection_top_n_value', 'value'),
+               Input('precursor_selection_use_exclusion_list', 'value'),
+               Input('precursor_selection_exclusion_list_tolerance_value', 'value')],
               State('edit_processing_parameters_modal', 'is_open'))
 def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
                                                n_clicks_save,
@@ -334,6 +339,9 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
                                                peak_picking_method,
                                                peak_picking_snr,
                                                peak_picking_widths,
+                                               precursor_selection_top_n_value,
+                                               precursor_selection_use_exclusion_list,
+                                               precursor_selection_exclusion_list_tolerance_value,
                                                is_open):
     global PREPROCESSING_PARAMS
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
@@ -392,6 +400,9 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
             PREPROCESSING_PARAMS['PEAK_PICKING']['method'] = peak_picking_method
             PREPROCESSING_PARAMS['PEAK_PICKING']['snr'] = peak_picking_snr
             PREPROCESSING_PARAMS['PEAK_PICKING']['widths'] = peak_picking_widths
+            PREPROCESSING_PARAMS['PRECURSOR_SELECTION']['top_n'] = precursor_selection_top_n_value
+            PREPROCESSING_PARAMS['PRECURSOR_SELECTION']['use_exclusion_list'] = precursor_selection_use_exclusion_list
+            PREPROCESSING_PARAMS['PRECURSOR_SELECTION']['exclusion_list_tolerance'] = precursor_selection_exclusion_list_tolerance_value
         return not is_open
     return is_open
 

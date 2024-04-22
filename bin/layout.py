@@ -8,7 +8,7 @@ import dash_bootstrap_components as dbc
 from bin.util import *
 
 
-def get_preprocessing_parameters_layout(param_dict):
+def get_preprocessing_parameters_layout(param_dict, include_precursor_selection=False):
     trim_spectrum_parameters = html.Div(
         [
             html.H5('Spectrum Trimming Parameters'),
@@ -679,6 +679,53 @@ def get_preprocessing_parameters_layout(param_dict):
         style={'margin': '20px'}
     )
 
+    precursor_selection_parameters = html.Div(
+        [
+            html.H5('Precursor Selection Parameters'),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Number of Precursors per Spot'),
+                    dbc.Input(id='precursor_selection_top_n_value',
+                              placeholder=param_dict['PRECURSOR_SELECTION']['top_n'],
+                              value=param_dict['PRECURSOR_SELECTION']['top_n'],
+                              type='number',
+                              min=1,
+                              step=1)
+                ],
+                id='precursor_selection_top_n',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.RadioItems(
+                id='precursor_selection_use_exclusion_list',
+                options=[
+                    {'label': 'Use Exclusion List', 'value': True},
+                    {'label': 'Ignore Exclusion List', 'value': False}
+                ],
+                value=param_dict['PRECURSOR_SELECTION']['use_exclusion_list'],
+                labelStyle={'display': 'inline-block', 'marginRgiht': '20px'},
+                inputStyle={'margin-right': '10px'},
+                className='btn-group',
+                inputClassName='btn-check',
+                labelClassName='btn btn-outline-primary',
+                labelCheckedClassName='active',
+            ),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Exclusion List Tolerance (Da)'),
+                    dbc.Input(id='precursor_selection_exclusion_list_tolerance_value',
+                              placeholder=param_dict['PRECURSOR_SELECTION']['exclusion_list_tolerance'],
+                              value=param_dict['PRECURSOR_SELECTION']['exclusion_list_tolerance'],
+                              type='number',
+                              min=0)
+                ],
+                id='precursor_selection_exclusion_list_tolerance',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            )
+        ]
+    )
+
     return [trim_spectrum_parameters,
             transform_intensity_parameters,
             smooth_baseline_parameters,
@@ -686,7 +733,8 @@ def get_preprocessing_parameters_layout(param_dict):
             normalize_intensity_parameters,
             bin_spectrum_parameters,
             #align_spectra_parameters,
-            peak_picking_parameters]
+            peak_picking_parameters,
+            precursor_selection_parameters]
 
 
 def get_autox_validation_modal_layout(autox_path_dict):
