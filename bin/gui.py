@@ -12,6 +12,8 @@ from bin.util import *
 from dash import State, callback_context, no_update, dash_table, MATCH, ALL
 from dash_extensions.enrich import Input, Output, DashProxy, MultiplexerTransform, Serverside, ServersideOutputTransform
 import dash_bootstrap_components as dbc
+import plotly.express as px
+from plotly_resampler import FigureResampler
 
 # default processing parameters from config file
 PREPROCESSING_PARAMS = get_preprocessing_params()
@@ -60,7 +62,6 @@ app = DashProxy(prevent_initial_callbacks=True,
 app.layout = get_dashboard_layout(PREPROCESSING_PARAMS, PLATE_FORMAT, AUTOX_PATH_DICT)
 
 
-# TODO: add callbacks for preview, run buttons
 @app.callback([Output({'type': 'raw_data_path_input', 'index': MATCH}, 'value'),
                Output({'type': 'raw_data_path_input', 'index': MATCH}, 'valid'),
                Output({'type': 'raw_data_path_input', 'index': MATCH}, 'invalid')],
@@ -144,9 +145,6 @@ def clear_blank_spots(n_clicks):
         return []
 
 
-# maybe...
-# TODO: will need to have another spectrum shown with exclusion list that plots the average spectrum and labels peaks
-#  used to generate exclusion list
 @ app.callback(Output('exclusion_list', 'data'),
                Input('generate_exclusion_list_from_blank_spots', 'n_clicks'))
 def generate_exclusion_list_from_blank_spots(n_clicks):
@@ -191,10 +189,11 @@ def generate_exclusion_list_from_blank_spots(n_clicks):
             spectrum.peak_picking(**params['PEAK_PICKING'])
         # generate feature matrix
         blank_feature_matrix = get_feature_matrix(blank_spectra, missing_value_imputation=False)
-        # round?
-        #blank_feature_matrix = blank_feature_matrix.round(2)
         # get exclusion list and return as df.to_dict('records')
         exclusion_list_df = pd.DataFrame(data={'m/z': np.unique(blank_feature_matrix['mz'].values)})
+        # undo preprocessing
+        for spectrum in blank_spectra:
+            spectrum.undo_all_processing()
         return exclusion_list_df.to_dict('records')
 
 
@@ -210,7 +209,7 @@ def upload_exclusion_list_from_csv(n_clicks, exclusion_list, exclusion_list_csv_
         main_tk_window.attributes('-topmost', True, '-alpha', 0)
         filename = askopenfilename(filetypes=[('Comma Separated Value', '*.csv')])
         main_tk_window.destroy()
-        exclusion_list_df = pd.read_csv(filename)
+        exclusion_list_df = pd.read_csv(filename).sort_values(by='m/z')
         if exclusion_list_df.shape[1] == 1 and exclusion_list_df.columns[0] == 'm/z':
             return exclusion_list_df.to_dict('records'), exclusion_list_csv_error_modal_is_open
         else:
@@ -234,8 +233,6 @@ def clear_exclusion_list(n_clicks):
         return pd.DataFrame(columns=['m/z']).to_dict('records')
 
 
-# TODO: move align spectra and exclusion list processing params to new modal when clicking "Generate Exclusion List"
-# TODO: preprocessing params modal pops up when clicking "Preview" or "Run"; remove "Edit Preprocessing parameters"
 @app.callback(Output('edit_processing_parameters_modal', 'is_open'),
               [Input('edit_preprocessing_parameters', 'n_clicks'),
                Input('edit_processing_parameters_save', 'n_clicks'),
@@ -618,6 +615,112 @@ def toggle_peak_picking_method_parameters(n_clicks, value):
         return toggle_locmax_style()
     elif value == 'cwt':
         return toggle_cwt_style()
+
+
+@app.callback([Output('preview_precursor_list_modal', 'is_open'),
+               Output('preview_id', 'options'),
+               Output('preview_id', 'value'),
+               Output('preview_figure', 'figure')],
+              [Input('preview_precursor_list', 'n_clicks'),
+               Input('preview_precursor_list_modal_back', 'n_clicks'),
+               Input('preview_precursor_list_modal_run', 'n_clicks')],
+              [State('preview_precursor_list_modal', 'is_open'),
+               State('exclusion_list', 'data')])
+def preview_precursor_list(n_clicks_preview,
+                           n_clicks_modal_back,
+                           n_clicks_modal_run,
+                           is_open,
+                           exclusion_list):
+    global INDEXED_DATA
+    global PREPROCESSING_PARAMS
+    global BLANK_SPOTS
+    changed_id = [i['prop_id'] for i in callback_context.triggered][0]
+    if changed_id == 'preview_precursor_list.n_clicks':
+        params = copy.deepcopy(PREPROCESSING_PARAMS)
+        # preprocessing
+        if params['TRIM_SPECTRUM']['run']:
+            del params['TRIM_SPECTRUM']['run']
+            for key, spectrum in INDEXED_DATA.items():
+                spectrum.trim_spectrum(**params['TRIM_SPECTRUM'])
+        if params['TRANSFORM_INTENSITY']['run']:
+            del params['TRANSFORM_INTENSITY']['run']
+            for key, spectrum in INDEXED_DATA.items():
+                spectrum.transform_intensity(**params['TRANSFORM_INTENSITY'])
+        if params['SMOOTH_BASELINE']['run']:
+            del params['SMOOTH_BASELINE']['run']
+            for key, spectrum in INDEXED_DATA.items():
+                spectrum.smooth_baseline(**params['SMOOTH_BASELINE'])
+        if params['REMOVE_BASELINE']['run']:
+            del params['REMOVE_BASELINE']['run']
+            for key, spectrum in INDEXED_DATA.items():
+                spectrum.remove_baseline(**params['REMOVE_BASELINE'])
+        if params['NORMALIZE_INTENSITY']['run']:
+            del params['NORMALIZE_INTENSITY']['run']
+            for key, spectrum in INDEXED_DATA.items():
+                spectrum.normalize_intensity(**params['NORMALIZE_INTENSITY'])
+        if params['BIN_SPECTRUM']['run']:
+            del params['BIN_SPECTRUM']['run']
+            for key, spectrum in INDEXED_DATA.items():
+                spectrum.bin_spectrum(**params['BIN_SPECTRUM'])
+        # peak picking
+        for key, spectrum in INDEXED_DATA.items():
+            spectrum.peak_picking(**params['PEAK_PICKING'])
+        # remove peaks found in exclusion list
+        if params['PRECURSOR_SELECTION']['use_exclusion_list']:
+            exclusion_list = pd.DataFrame(exclusion_list)
+            for key, spectrum in INDEXED_DATA.items():
+                spectrum_df = pd.DataFrame(data={'m/z': spectrum.peak_picked_mz_array,
+                                                 'Intensity': spectrum.peak_picked_intensity_array,
+                                                 'Indices': spectrum.peak_picking_indices})
+                merged_df = pd.merge_asof(spectrum_df,
+                                          exclusion_list.rename(columns={'m/z': 'exclusion_list'}),
+                                          left_on='m/z',
+                                          right_on='exclusion_list',
+                                          tolerance=params['PRECURSOR_SELECTION']['exclusion_list_tolerance'],
+                                          direction='nearest')
+                merged_df = merged_df.drop(merged_df.dropna().index)
+                spectrum.peak_picked_mz_array = merged_df['m/z'].values
+                spectrum.peak_picked_intensity_array = merged_df['Intensity'].values
+                spectrum.peak_picking_indices = merged_df['Indices'].values
+        # subset peak picked peaks to only include top n peaks
+        for key, spectrum in INDEXED_DATA.items():
+            top_n_indices = np.argsort(spectrum.peak_picked_intensity_array)[::-1][:params['PRECURSOR_SELECTION']['top_n']]
+            spectrum.peak_picked_mz_array = spectrum.peak_picked_mz_array[top_n_indices]
+            spectrum.peak_picked_intensity_array = spectrum.peak_picked_intensity_array[top_n_indices]
+            spectrum.peak_picking_indices = spectrum.peak_picking_indices[top_n_indices]
+        # populate dropdown menu
+        dropdown_options = [{'label': i, 'value': i} for i in INDEXED_DATA.keys() if i not in BLANK_SPOTS]
+        dropdown_value = [i for i in INDEXED_DATA.keys() if i not in BLANK_SPOTS]
+        return not is_open, dropdown_options, dropdown_value, blank_figure()
+    if changed_id == 'preview_precursor_list_modal_back.n_clicks':
+        for key, spectrum in INDEXED_DATA.items():
+            spectrum.undo_all_processing()
+        return not is_open, [], [], blank_figure()
+    if changed_id == 'preview_precursor_list_modal_run.n_clicks':
+        # TODO: code to write autoxecute .run file
+        pass
+    return is_open, [], [], blank_figure()
+
+
+@app.callback([Output('preview_figure', 'figure'),
+               Output('store_plot', 'data')],
+              Input('preview_id', 'value'))
+def update_preview_spectrum(value):
+    global INDEXED_DATA
+    fig = get_spectrum(INDEXED_DATA[value])
+    #cleanup_file_system_backend()
+    return fig, Serverside(fig)
+
+
+@app.callback(Output('preview_figure', 'figure', allow_duplicate=True),
+              Input('preview_figure', 'relayoutData'),
+              State('store_plot', 'data'),
+              prevent_initial_call=True,
+              memoize=True)
+def resample_spectrum(relayoutdata: dict, fig: FigureResampler):
+    if fig is None:
+        return no_update
+    return fig.construct_update_data_patch(relayoutdata)
 
 
 if __name__ == '__main__':

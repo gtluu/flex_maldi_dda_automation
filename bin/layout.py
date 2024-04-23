@@ -728,13 +728,15 @@ def get_preprocessing_parameters_layout(param_dict):
         style={'margin': '20px'}
     )
 
+    # TODO: add folder selection to choose MS/MS method
+
     return [trim_spectrum_parameters,
             transform_intensity_parameters,
             smooth_baseline_parameters,
             remove_baseline_parameters,
             normalize_intensity_parameters,
             bin_spectrum_parameters,
-            #align_spectra_parameters,
+            # align_spectra_parameters,
             peak_picking_parameters,
             precursor_selection_parameters]
 
@@ -828,6 +830,26 @@ def get_exclusion_list_layout():
                    id='generate_exclusion_list_from_blank_spots'),
         dbc.Button('Upload Exclusion List from CSV', id='upload_exclusion_list_from_csv'),
         dbc.Button('Clear Exclusion List', id='clear_exclusion_list'),
+    ]
+
+
+# TODO: replace dropdown with plate map
+def get_preview_layout():
+    return [
+        dcc.Dropdown(
+            id='preview_id',
+            multi=False,
+            options=[],
+            value=[],
+            style={'width': '97%',
+                   'margin': '20px'}
+        ),
+        dcc.Graph(
+            id='preview_figure',
+            figure=blank_figure(),
+            style={'width': '100%',
+                   'height': '600px'}
+        )
     ]
 
 
@@ -946,6 +968,33 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict):
                 size='lg',
                 centered=True,
                 is_open=False
+            ),
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle('Preview Precursor List')),
+                    dbc.ModalBody(get_preview_layout()),
+                    dbc.ModalFooter(
+                        dbc.ButtonGroup(
+                            [
+                                dbc.Button('Go Back',
+                                           id='preview_precursor_list_modal_back',
+                                           className='ms-auto'),
+                                dbc.Button('Generate MS/MS AutoXecute Sequence',
+                                           id='preview_precursor_list_modal_run',
+                                           className='ms-auto')
+                            ]
+                        )
+                    )
+                ],
+                id='preview_precursor_list_modal',
+                fullscreen=True,
+                backdrop='static',
+                scrollable=True,
+                centered=True,
+                is_open=False
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_plot')
             )
         ],
         className='row',

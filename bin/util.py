@@ -1,8 +1,13 @@
 import os
+import copy
 import configparser
+import numpy as np
 import pandas as pd
 import tkinter
 from tkinter.filedialog import askopenfilename, askdirectory, asksaveasfilename
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly_resampler import FigureResampler
 
 
 def get_geometry_files(geometry_path):
@@ -87,3 +92,36 @@ def get_plate_map(plate_format):
         columns = list(range(1, 97))
     data = [[f"{row}{col}" for col in columns] for row in rows]
     return pd.DataFrame(data, index=rows, columns=columns)
+
+
+def blank_figure():
+    fig = FigureResampler(go.Figure(go.Scatter(x=[], y=[])))
+    fig.update_layout(template=None)
+    fig.update_xaxes(showgrid=False, showticklabels=False, zeroline=False)
+    fig.update_yaxes(showgrid=False, showticklabels=False, zeroline=False)
+    return fig
+
+
+def get_spectrum(spectrum):
+    spectrum_df = pd.DataFrame({'m/z': copy.deepcopy(spectrum.preprocessed_mz_array),
+                                'Intensity': copy.deepcopy(spectrum.preprocessed_intensity_array)})
+    labels = copy.deepcopy(np.round(copy.deepcopy(spectrum.preprocessed_mz_array), decimals=4).astype(str))
+    mask = np.ones(labels.size, dtype=bool)
+    mask[spectrum.peak_picking_indices] = False
+    labels[mask] = ''
+    fig = FigureResampler(px.line(data_frame=spectrum_df,
+                                  x='m/z',
+                                  y='Intensity',
+                                  hover_data={'m/z': ':.4f',
+                                              'Intensity': ':.1f'},
+                                  text=labels))
+    fig.update_traces(textposition='top center')
+    fig.update_layout(xaxis_tickformat='d',
+                      yaxis_tickformat='~e')
+    return fig
+
+
+def cleanup_file_system_backend():
+    for filename in os.listdir(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'file_system_backend')):
+        os.remove(os.path.join(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'file_system_backend'),
+                               filename))
