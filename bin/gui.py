@@ -145,6 +145,9 @@ def clear_blank_spots(n_clicks):
         return []
 
 
+# TODO: average unaligned duplicates from replicate blank spots
+# TODO: (in pymaldiproc) ion deconvolution in peak picking
+# TODO: add a modal window to view blank spot peaks
 @ app.callback(Output('exclusion_list', 'data'),
                Input('generate_exclusion_list_from_blank_spots', 'n_clicks'))
 def generate_exclusion_list_from_blank_spots(n_clicks):
