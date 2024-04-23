@@ -37,7 +37,7 @@ PREPROCESSING_PARAMS['ALIGN_SPECTRA'] = {'run': False,
                                          'average2_multiplier': int(config['align_spectra']['average2_multiplier'])}"""
 PREPROCESSING_PARAMS['PRECURSOR_SELECTION'] = {'top_n': 10,
                                                'use_exclusion_list': True,
-                                               'exclusion_list_tolerance': 0.1}
+                                               'exclusion_list_tolerance': 0.05}
 
 # get AutoXecute sequence path
 AUTOX_SEQ = get_autox_sequence_filename()
