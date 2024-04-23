@@ -668,20 +668,21 @@ def preview_precursor_list(n_clicks_preview,
         # remove peaks found in exclusion list
         if params['PRECURSOR_SELECTION']['use_exclusion_list']:
             exclusion_list = pd.DataFrame(exclusion_list)
-            for key, spectrum in INDEXED_DATA.items():
-                spectrum_df = pd.DataFrame(data={'m/z': spectrum.peak_picked_mz_array,
-                                                 'Intensity': spectrum.peak_picked_intensity_array,
-                                                 'Indices': spectrum.peak_picking_indices})
-                merged_df = pd.merge_asof(spectrum_df,
-                                          exclusion_list.rename(columns={'m/z': 'exclusion_list'}),
-                                          left_on='m/z',
-                                          right_on='exclusion_list',
-                                          tolerance=params['PRECURSOR_SELECTION']['exclusion_list_tolerance'],
-                                          direction='nearest')
-                merged_df = merged_df.drop(merged_df.dropna().index)
-                spectrum.peak_picked_mz_array = merged_df['m/z'].values
-                spectrum.peak_picked_intensity_array = merged_df['Intensity'].values
-                spectrum.peak_picking_indices = merged_df['Indices'].values
+            if not exclusion_list.empty:
+                for key, spectrum in INDEXED_DATA.items():
+                    spectrum_df = pd.DataFrame(data={'m/z': spectrum.peak_picked_mz_array,
+                                                     'Intensity': spectrum.peak_picked_intensity_array,
+                                                     'Indices': spectrum.peak_picking_indices})
+                    merged_df = pd.merge_asof(spectrum_df,
+                                              exclusion_list.rename(columns={'m/z': 'exclusion_list'}),
+                                              left_on='m/z',
+                                              right_on='exclusion_list',
+                                              tolerance=params['PRECURSOR_SELECTION']['exclusion_list_tolerance'],
+                                              direction='nearest')
+                    merged_df = merged_df.drop(merged_df.dropna().index)
+                    spectrum.peak_picked_mz_array = merged_df['m/z'].values
+                    spectrum.peak_picked_intensity_array = merged_df['Intensity'].values
+                    spectrum.peak_picking_indices = merged_df['Indices'].values
         # subset peak picked peaks to only include top n peaks
         for key, spectrum in INDEXED_DATA.items():
             top_n_indices = np.argsort(spectrum.peak_picked_intensity_array)[::-1][:params['PRECURSOR_SELECTION']['top_n']]
@@ -698,7 +699,7 @@ def preview_precursor_list(n_clicks_preview,
         return not is_open, [], [], blank_figure()
     if changed_id == 'preview_precursor_list_modal_run.n_clicks':
         # TODO: code to write autoxecute .run file
-        pass
+        return not is_open, [], [], blank_figure()
     return is_open, [], [], blank_figure()
 
 

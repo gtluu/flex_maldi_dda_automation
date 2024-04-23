@@ -729,6 +729,7 @@ def get_preprocessing_parameters_layout(param_dict):
     )
 
     # TODO: add folder selection to choose MS/MS method
+    # TODO: add folder selection to choose output directory
 
     return [trim_spectrum_parameters,
             transform_intensity_parameters,
