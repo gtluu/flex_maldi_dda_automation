@@ -148,10 +148,8 @@ def clear_blank_spots(n_clicks):
         ]
 
 
-# TODO: average unaligned duplicates from replicate blank spots
-# TODO: (in pymaldiproc) ion deconvolution in peak picking
-# TODO: add a modal window to view blank spot peaks
-@ app.callback(Output('exclusion_list', 'data'),
+@ app.callback([Output('exclusion_list', 'data'),
+                Output('view_exclusion_list_spectra', 'style')],
                Input('generate_exclusion_list_from_blank_spots', 'n_clicks'))
 def generate_exclusion_list_from_blank_spots(n_clicks):
     global INDEXED_DATA
@@ -200,7 +198,36 @@ def generate_exclusion_list_from_blank_spots(n_clicks):
         # undo preprocessing
         for spectrum in blank_spectra:
             spectrum.undo_all_processing()
-        return exclusion_list_df.to_dict('records')
+        return exclusion_list_df.to_dict('records'), {'margin': '10px', 'display': 'flex'}
+
+
+@app.callback([Output('exclusion_list_blank_spectra_modal', 'is_open'),
+               Output('exclusion_list_blank_spectra_id', 'options'),
+               Output('exclusion_list_blank_spectra_id', 'value'),
+               Output('exclusion_list_blank_spectra_figure', 'figure')],
+              [Input('view_exclusion_list_spectra', 'n_clicks'),
+               Input('exclusion_list_blank_spectra_modal_close', 'n_clicks')],
+              State('exclusion_list_blank_spectra_modal', 'is_open'))
+def view_exclusion_list_spectra(n_clicks_view, n_clicks_close, is_open):
+    changed_id = [i['prop_id'] for i in callback_context.triggered][0]
+    if changed_id == 'view_exclusion_list_spectra.n_clicks':
+        # populate dropdown menu
+        dropdown_options = [{'label': i, 'value': i} for i in INDEXED_DATA.keys() if i in BLANK_SPOTS]
+        dropdown_value = [i for i in INDEXED_DATA.keys() if i in BLANK_SPOTS]
+        return not is_open, dropdown_options, dropdown_value, blank_figure()
+    if changed_id == 'exclusion_list_blank_spectra_modal_close.n_clicks':
+        return not is_open, [], [], blank_figure()
+    return is_open, [], [], blank_figure()
+
+
+@app.callback([Output('exclusion_list_blank_spectra_figure', 'figure'),
+               Output('store_plot', 'data')],
+              Input('exclusion_list_blank_spectra_id', 'value'))
+def update_preview_spectrum(value):
+    global INDEXED_DATA
+    fig = get_spectrum(INDEXED_DATA[value])
+    #cleanup_file_system_backend()
+    return fig, Serverside(fig)
 
 
 @app.callback([Output('exclusion_list', 'data'),
@@ -231,12 +258,13 @@ def toggle_exclusion_list_csv_error_modal(n_clicks, is_open):
     return is_open
 
 
-@app.callback(Output('exclusion_list', 'data'),
+@app.callback([Output('exclusion_list', 'data'),
+               Output('view_exclusion_list_spectra', 'style')],
               Input('clear_exclusion_list', 'n_clicks'))
 def clear_exclusion_list(n_clicks):
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'clear_exclusion_list.n_clicks':
-        return pd.DataFrame(columns=['m/z']).to_dict('records')
+        return pd.DataFrame(columns=['m/z']).to_dict('records'), {'margin': '10px', 'display': 'none'}
 
 
 @app.callback(Output('edit_processing_parameters_modal', 'is_open'),

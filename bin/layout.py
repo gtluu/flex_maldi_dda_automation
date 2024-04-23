@@ -905,10 +905,49 @@ def get_exclusion_list_layout():
             style_data_conditional=[],
             page_size=10
         ),
-        dbc.Button('Generate Exclusion List from Blank Spots',
-                   id='generate_exclusion_list_from_blank_spots'),
-        dbc.Button('Upload Exclusion List from CSV', id='upload_exclusion_list_from_csv'),
-        dbc.Button('Clear Exclusion List', id='clear_exclusion_list'),
+        dbc.Button(
+            'Generate Exclusion List from Blank Spots',
+            id='generate_exclusion_list_from_blank_spots',
+            style={'margin': '10px',
+                   'display': 'flex'}
+        ),
+        dbc.Button(
+            'View Blank Spectra Used to Generate Exclusion List',
+            id='view_exclusion_list_spectra',
+            style={'margin': '10px',
+                   'display': 'none'}
+        ),
+        dbc.Button(
+            'Upload Exclusion List from CSV',
+            id='upload_exclusion_list_from_csv',
+            style={'margin': '10px',
+                   'display': 'flex'}
+        ),
+        dbc.Button(
+            'Clear Exclusion List',
+            id='clear_exclusion_list',
+            style={'margin': '10px',
+                   'display': 'flex'}
+        ),
+    ]
+
+
+def get_exclusion_list_spectra_layout():
+    return [
+        dcc.Dropdown(
+            id='exclusion_list_blank_spectra_id',
+            multi=False,
+            options=[],
+            value=[],
+            style={'width': '97%',
+                   'margin': '20px'}
+        ),
+        dcc.Graph(
+            id='exclusion_list_blank_spectra_figure',
+            figure=blank_figure(),
+            style={'width': '100%',
+                   'height': '600px'}
+        )
     ]
 
 
@@ -1035,6 +1074,20 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, outdir):
                 ],
                 id='edit_processing_parameters_modal_saved',
                 size='lg',
+                centered=True,
+                is_open=False
+            ),
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle('Blank Spectra Used to Generate Exclusion List')),
+                    dbc.ModalBody(get_exclusion_list_spectra_layout()),
+                    dbc.ModalFooter(dbc.Button('Close',
+                                               id='exclusion_list_blank_spectra_modal_close'))
+                ],
+                id='exclusion_list_blank_spectra_modal',
+                fullscreen=True,
+                backdrop='static',
+                scrollable=True,
                 centered=True,
                 is_open=False
             ),
