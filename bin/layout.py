@@ -818,6 +818,87 @@ def get_autox_validation_modal_layout(autox_path_dict):
     return modal_divs
 
 
+def get_run_layout(outdir):
+    if os.path.exists(outdir):
+        return [
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Output Directory'),
+                    dbc.Input(id='run_output_directory_value',
+                              placeholder=outdir,
+                              value=outdir,
+                              readonly=True,
+                              type='text',
+                              valid=True),
+                    dbc.Button('...', id='run_select_output_directory')
+                ],
+                id='run_output_directory',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.Checkbox(
+                id='run_method_checkbox',
+                label='Use a new MS/MS method for the generated AutoXecute sequence',
+                value=False,
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('MS/MS Method'),
+                    dbc.Input(id='run_method_value',
+                              placeholder='',
+                              value='',
+                              readonly=True,
+                              type='text'),
+                    dbc.Button('...', id='run_select_method')
+                ],
+                id='run_method',
+                style={'margin': '10px',
+                       'display': 'none'}
+            )
+        ]
+    else:
+        return [
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Output Directory'),
+                    dbc.Input(id='run_output_directory_value',
+                              placeholder=outdir,
+                              value=outdir,
+                              readonly=True,
+                              type='text',
+                              invalid=True),
+                    dbc.Button('...', id='run_select_output_directory')
+                ],
+                id='run_output_directory',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.Checkbox(
+                id='run_method_checkbox',
+                label='Use a new MS/MS method for the generated AutoXecute sequence',
+                value=False,
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('MS/MS Method'),
+                    dbc.Input(id='run_method_value',
+                              placeholder='',
+                              value='',
+                              readonly=True,
+                              type='text'),
+                    dbc.Button('...', id='run_select_method')
+                ],
+                id='run_method',
+                style={'margin': '10px',
+                       'display': 'none'}
+            )
+        ]
+
+
 def get_exclusion_list_layout():
     return [
         dash_table.DataTable(
@@ -854,7 +935,7 @@ def get_preview_layout():
     ]
 
 
-def get_dashboard_layout(param_dict, plate_format, autox_path_dict):
+def get_dashboard_layout(param_dict, plate_format, autox_path_dict, outdir):
     df = get_plate_map(plate_format)
     return html.Div(
         [
@@ -991,6 +1072,38 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict):
                 fullscreen=True,
                 backdrop='static',
                 scrollable=True,
+                centered=True,
+                is_open=False
+            ),
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle('Generate MS/MS AutoXecute Sequence')),
+                    dbc.ModalBody(get_run_layout(outdir)),
+                    dbc.ModalFooter(
+                        dbc.Button('Run',
+                                   id='run_button',
+                                   className='ms-auto')
+                    )
+                ],
+                id='run_modal',
+                fullscreen=True,
+                backdrop='static',
+                scrollable=True,
+                centered=True,
+                is_open=False
+            ),
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle('Success')),
+                    dbc.ModalBody(f'The MS/MS AutoXecute sequence has been created in {outdir}.'),
+                    dbc.ModalFooter(
+                        dbc.Button('Close',
+                                   id='run_success_close',
+                                   className='ms_auto')
+                    )
+                ],
+                id='run_success_modal',
+                size='lg',
                 centered=True,
                 is_open=False
             ),

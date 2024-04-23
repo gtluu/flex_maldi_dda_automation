@@ -59,7 +59,7 @@ BLANK_SPOTS = []
 app = DashProxy(prevent_initial_callbacks=True,
                 transforms=[MultiplexerTransform(), ServersideOutputTransform()],
                 external_stylesheets=[dbc.themes.BOOTSTRAP])
-app.layout = get_dashboard_layout(PREPROCESSING_PARAMS, PLATE_FORMAT, AUTOX_PATH_DICT)
+app.layout = get_dashboard_layout(PREPROCESSING_PARAMS, PLATE_FORMAT, AUTOX_PATH_DICT, MS1_AUTOX.attrib['directory'])
 
 
 @app.callback([Output({'type': 'raw_data_path_input', 'index': MATCH}, 'value'),
@@ -698,7 +698,6 @@ def preview_precursor_list(n_clicks_preview,
             spectrum.undo_all_processing()
         return not is_open, [], [], blank_figure()
     if changed_id == 'preview_precursor_list_modal_run.n_clicks':
-        # TODO: code to write autoxecute .run file
         return not is_open, [], [], blank_figure()
     return is_open, [], [], blank_figure()
 
@@ -711,6 +710,109 @@ def update_preview_spectrum(value):
     fig = get_spectrum(INDEXED_DATA[value])
     #cleanup_file_system_backend()
     return fig, Serverside(fig)
+
+
+@app.callback([Output('run_modal', 'is_open'),
+               Output('run_success_modal', 'is_open')],
+              [Input('preview_precursor_list_modal_run', 'n_clicks'),
+               Input('run_button', 'n_clicks')],
+              [State('run_modal', 'is_open'),
+               State('run_success_modal', 'is_open'),
+               State('run_output_directory_value', 'value'),
+               State('run_method_value', 'value'),
+               State('run_method_checkbox', 'value')])
+def toggle_run_modal(preview_run_n_clicks, run_n_clicks, run_is_open, success_is_open, outdir, method, method_checkbox):
+    changed_id = [i['prop_id'] for i in callback_context.triggered][0]
+    if changed_id == 'preview_precursor_list_modal_run.n_clicks':
+        return not run_is_open, success_is_open
+    if changed_id == 'run_button.n_clicks':
+        global MS1_AUTOX
+        global AUTOX_PATH_DICT
+        global INDEXED_DATA
+        global BLANK_SPOTS
+        global AUTOX_SEQ
+        new_autox = et.Element(MS1_AUTOX.tag, attrib=MS1_AUTOX.attrib)
+        new_autox.attrib['directory'] = outdir
+        for spot_group in MS1_AUTOX:
+            for cont in spot_group:
+                if cont.attrib['Pos_on_Scout'] not in BLANK_SPOTS:
+                    new_spot_group = et.SubElement(new_autox, spot_group.tag, attrib=spot_group.attrib)
+                    new_spot_group.attrib['sampleName'] = f"{new_spot_group.attrib['sampleName']}_{cont.attrib['Pos_on_Scout']}_MSMS"
+                    if method_checkbox and os.path.exists(method):
+                        new_spot_group.attrib['acqMethod'] = method
+                    else:
+                        new_spot_group.attrib['acqMethod'] = [value['method_path']
+                                                              for key, value in AUTOX_PATH_DICT.items()
+                                                              if value['sample_name'] == spot_group.attrib['sampleName']][0]
+                    top_n_peaks = pd.DataFrame({'m/z': INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_mz_array,
+                                                'Intensity': INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_intensity_array})
+                    top_n_peaks = top_n_peaks.sort_values(by='Intensity', ascending=False).round(4)
+                    top_n_peaks = top_n_peaks.drop_duplicates(subset='m/z')
+                    top_n_peaks = top_n_peaks['m/z'].values.tolist()
+                    for peak in top_n_peaks:
+                        new_cont = et.SubElement(new_spot_group, cont.tag, attrib=cont.attrib)
+                        new_cont.attrib['acqJobMode'] = 'MSMS'
+                        new_cont.attrib['precursor_m_z'] = str(peak)
+        new_autox_tree = et.ElementTree(new_autox)
+        new_autox_tree.write(os.path.join(outdir, os.path.splitext(os.path.split(AUTOX_SEQ)[-1])[0]) + '_MALDI_DDA.run',
+                             encoding='utf-8',
+                             xml_declaration=True,
+                             pretty_print=True)
+        return not run_is_open, not success_is_open
+    return run_is_open, success_is_open
+
+
+@app.callback(Output('run_success_modal', 'is_open'),
+              Input('run_success_close', 'n_clicks'),
+              State('run_success_modal', 'is_open'))
+def toggle_run_success_modal(n_clicks, is_open):
+    if n_clicks:
+        return not is_open
+    return is_open
+
+
+@app.callback(Output('run_method', 'style'),
+              [Input('preview_precursor_list_modal_run', 'n_clicks'),
+               Input('run_method_checkbox', 'value')])
+def toggle_run_new_method_selection_input(n_clicks, value):
+    if value:
+        return copy.deepcopy(SHOWN)
+    elif not value:
+        return copy.deepcopy(HIDDEN)
+
+
+@app.callback([Output('run_output_directory_value', 'value'),
+               Output('run_output_directory_value', 'valid'),
+               Output('run_output_directory_value', 'invalid')],
+              Input('run_select_output_directory', 'n_clicks'))
+def select_new_output_directory(n_clicks):
+    changed_id = [i['prop_id'] for i in callback_context.triggered][0]
+    if changed_id == 'run_select_output_directory.n_clicks':
+        main_tk_window = tkinter.Tk()
+        main_tk_window.attributes('-topmost', True, '-alpha', 0)
+        dirname = askdirectory(mustexist=True)
+        main_tk_window.destroy()
+        if os.path.exists(dirname):
+            return dirname, True, False
+        else:
+            return dirname, False, True
+
+
+@app.callback([Output('run_method_value', 'value'),
+               Output('run_method_value', 'valid'),
+               Output('run_method_value', 'invalid')],
+              Input('run_select_method', 'n_clicks'))
+def select_new_method_(n_clicks):
+    changed_id = [i['prop_id'] for i in callback_context.triggered][0]
+    if changed_id == 'run_select_method.n_clicks':
+        main_tk_window = tkinter.Tk()
+        main_tk_window.attributes('-topmost', True, '-alpha', 0)
+        dirname = askdirectory(mustexist=True)
+        main_tk_window.destroy()
+        if dirname.endswith('.m') and os.path.exists(dirname):
+            return dirname, True, False
+        else:
+            return dirname, False, True
 
 
 @app.callback(Output('preview_figure', 'figure', allow_duplicate=True),
