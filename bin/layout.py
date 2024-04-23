@@ -728,9 +728,6 @@ def get_preprocessing_parameters_layout(param_dict):
         style={'margin': '20px'}
     )
 
-    # TODO: add folder selection to choose MS/MS method
-    # TODO: add folder selection to choose output directory
-
     return [trim_spectrum_parameters,
             transform_intensity_parameters,
             smooth_baseline_parameters,
