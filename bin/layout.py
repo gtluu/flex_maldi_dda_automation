@@ -945,7 +945,10 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, outdir):
                         columns=[{'name': str(col), 'id': str(col)} for col in df.columns],
                         id='plate_map',
                         style_header={'display': 'none'},
-                        style_data_conditional=[]
+                        style_data_conditional=[
+                            {'if': {'state': 'selected'},
+                             'backgroundColor': 'inherit !important'}
+                        ]
                     ),
                     dbc.Button(
                         'Mark Spots as Blank',

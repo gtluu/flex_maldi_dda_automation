@@ -142,7 +142,10 @@ def clear_blank_spots(n_clicks):
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'clear_blank_spots.n_clicks':
         BLANK_SPOTS = []
-        return []
+        return [
+            {'if': {'state': 'selected'},
+             'backgroundColor': 'inherit !important'}
+        ]
 
 
 # TODO: average unaligned duplicates from replicate blank spots
