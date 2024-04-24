@@ -673,6 +673,222 @@ def get_preprocessing_parameters_layout(param_dict):
                 id='peak_picking_widths',
                 style={'margin': '10px',
                        'display': 'flex'}
+            ),
+            dbc.RadioItems(
+                id='peak_picking_deisotope',
+                options=[
+                    {'label': 'Deisotope Peak List', 'value': True},
+                    {'label': 'Do Not Deisotope', 'value': False}
+                ],
+                value=param_dict['PEAK_PICKING']['deisotope'],
+                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
+                inputStyle={'margin-right': '10px'},
+                className='btn-group',
+                inputClassName='btn-check',
+                labelClassName='btn btn-outline-primary',
+                labelCheckedClassName='active',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Deisotoping Fragment Tolerance'),
+                    dbc.Input(id='peak_picking_deisotope_fragment_tolerance_value',
+                              placeholder=param_dict['PEAK_PICKING']['fragment_tolerance'],
+                              value=param_dict['PEAK_PICKING']['fragment_tolerance'],
+                              type='number',
+                              min=0,
+                              step=0.0001)
+                ],
+                id='peak_picking_deisotope_fragment_tolerance',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            html.P('Deisotoping Fragment_Tolerance Unit',
+                   id='peak_picking_deisotope_fragment_unit_ppm_label',
+                   style={'margin': '10px',
+                          'display': 'flex'}),
+            dbc.RadioItems(
+                id='peak_picking_deisotope_fragment_unit_ppm',
+                options=[
+                    {'label': 'PPM', 'value': True},
+                    {'label': 'Da', 'value': False}
+                ],
+                value=param_dict['PEAK_PICKING']['fragment_unit_ppm'],
+                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
+                inputStyle={'margin-right': '10px'},
+                className='btn-group',
+                inputClassName='btn-check',
+                labelClassName='btn btn-outline-primary',
+                labelCheckedClassName='active',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Deisotoping Minimum Charge'),
+                    dbc.Input(id='peak_picking_deisotope_min_charge_value',
+                              placeholder=param_dict['PEAK_PICKING']['min_charge'],
+                              value=param_dict['PEAK_PICKING']['min_charge'],
+                              type='number',
+                              min=1,
+                              step=1)
+                ],
+                id='peak_picking_deisotope_min_charge',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Deisotoping Maximum Charge'),
+                    dbc.Input(id='peak_picking_deisotope_max_charge_value',
+                              placeholder=param_dict['PEAK_PICKING']['max_charge'],
+                              value=param_dict['PEAK_PICKING']['max_charge'],
+                              type='number',
+                              min=1,
+                              step=1)
+                ],
+                id='peak_picking_deisotope_max_charge',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.RadioItems(
+                id='peak_picking_deisotope_keep_only_deisotoped',
+                options=[
+                    {'label': 'Retain Only Deisotoped Peaks', 'value': True},
+                    {'label': 'Retain Monoisotopic and All Other Peaks', 'value': False}
+                ],
+                value=param_dict['PEAK_PICKING']['keep_only_deisotoped'],
+                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
+                inputStyle={'margin-right': '10px'},
+                className='btn-group',
+                inputClassName='btn-check',
+                labelClassName='btn btn-outline-primary',
+                labelCheckedClassName='active',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Deisotoping Minimum Number of Isotopic Peaks'),
+                    dbc.Input(id='peak_picking_deisotope_min_isopeaks_value',
+                              placeholder=param_dict['PEAK_PICKING']['min_isopeaks'],
+                              value=param_dict['PEAK_PICKING']['min_isopeaks'],
+                              type='number',
+                              min=2,
+                              step=1)
+                ],
+                id='peak_picking_deisotope_min_isopeaks',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Deisotoping Maximum Number of Isotopic Peaks'),
+                    dbc.Input(id='peak_picking_deisotope_max_isopeaks_value',
+                              placeholder=param_dict['PEAK_PICKING']['max_isopeaks'],
+                              value=param_dict['PEAK_PICKING']['max_isopeaks'],
+                              type='number',
+                              min=2,
+                              step=1)
+                ],
+                id='peak_picking_deisotope_max_isopeaks',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.RadioItems(
+                id='peak_picking_deisotope_make_single_charged',
+                options=[
+                    {'label': 'Convert Deisotoped Monoisotopic Peak to Single Charge', 'value': True},
+                    {'label': 'Retain Original Charge', 'value': False}
+                ],
+                value=param_dict['PEAK_PICKING']['make_single_charged'],
+                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
+                inputStyle={'margin-right': '10px'},
+                className='btn-group',
+                inputClassName='btn-check',
+                labelClassName='btn btn-outline-primary',
+                labelCheckedClassName='active',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.RadioItems(
+                id='peak_picking_deisotope_annotate_charge',
+                options=[
+                    {'label': 'Annotate Charge', 'value': True},
+                    {'label': 'Do Not Annotate Charge', 'value': False}
+                ],
+                value=param_dict['PEAK_PICKING']['annotate_charge'],
+                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
+                inputStyle={'margin-right': '10px'},
+                className='btn-group',
+                inputClassName='btn-check',
+                labelClassName='btn btn-outline-primary',
+                labelCheckedClassName='active',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.RadioItems(
+                id='peak_picking_deisotope_annotate_iso_peak_count',
+                options=[
+                    {'label': 'Annotate Number of Isotopic Peaks', 'value': True},
+                    {'label': 'Do Not Annotate Number of Isotopic Peaks', 'value': False}
+                ],
+                value=param_dict['PEAK_PICKING']['annotate_iso_peak_count'],
+                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
+                inputStyle={'margin-right': '10px'},
+                className='btn-group',
+                inputClassName='btn-check',
+                labelClassName='btn btn-outline-primary',
+                labelCheckedClassName='active',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.RadioItems(
+                id='peak_picking_deisotope_use_decreasing_model',
+                options=[
+                    {'label': 'Use Decreasing/Averagine Model', 'value': True},
+                    {'label': 'Do Not Perform Peak Intensity Check', 'value': False}
+                ],
+                value=param_dict['PEAK_PICKING']['use_decreasing_model'],
+                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
+                inputStyle={'margin-right': '10px'},
+                className='btn-group',
+                inputClassName='btn-check',
+                labelClassName='btn btn-outline-primary',
+                labelCheckedClassName='active',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Deisotoping Intensity Check Starting Peak'),
+                    dbc.Input(id='peak_picking_deisotope_start_intensity_check_value',
+                              placeholder=param_dict['PEAK_PICKING']['start_intensity_check'],
+                              value=param_dict['PEAK_PICKING']['start_intensity_check'],
+                              type='number',
+                              min=1,
+                              step=1)
+                ],
+                id='peak_picking_deisotope_start_intensity_check',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.RadioItems(
+                id='peak_picking_deisotope_add_up_intensity',
+                options=[
+                    {'label': 'Sum Isotopic Pattern Intensities Into Monoisotopic Peak', 'value': True},
+                    {'label': 'Do Not Sum Intensities', 'value': False}
+                ],
+                value=param_dict['PEAK_PICKING']['add_up_intensity'],
+                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
+                inputStyle={'margin-right': '10px'},
+                className='btn-group',
+                inputClassName='btn-check',
+                labelClassName='btn btn-outline-primary',
+                labelCheckedClassName='active',
+                style={'margin': '10px',
+                       'display': 'flex'}
             )
         ],
         id='peak_picking_parameters',
@@ -1159,9 +1375,6 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, outdir):
                 size='lg',
                 centered=True,
                 is_open=False
-            ),
-            dcc.Loading(
-                dcc.Store(id='store_plot')
             )
         ],
         className='row',

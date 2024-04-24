@@ -317,6 +317,20 @@ def clear_exclusion_list(n_clicks):
                Input('peak_picking_method', 'value'),
                Input('peak_picking_snr_value', 'value'),
                Input('peak_picking_widths_value', 'value'),
+               Input('peak_picking_deisotope', 'value'),
+               Input('peak_picking_deisotope_fragment_tolerance_value', 'value'),
+               Input('peak_picking_deisotope_fragment_unit_ppm', 'value'),
+               Input('peak_picking_deisotope_min_charge_value', 'value'),
+               Input('peak_picking_deisotope_max_charge_value', 'value'),
+               Input('peak_picking_deisotope_keep_only_deisotoped', 'value'),
+               Input('peak_picking_deisotope_min_isopeaks_value', 'value'),
+               Input('peak_picking_deisotope_max_isopeaks_value', 'value'),
+               Input('peak_picking_deisotope_make_single_charged', 'value'),
+               Input('peak_picking_deisotope_annotate_charge', 'value'),
+               Input('peak_picking_deisotope_annotate_iso_peak_count', 'value'),
+               Input('peak_picking_deisotope_use_decreasing_model', 'value'),
+               Input('peak_picking_deisotope_start_intensity_check_value', 'value'),
+               Input('peak_picking_deisotope_add_up_intensity', 'value'),
                Input('precursor_selection_top_n_value', 'value'),
                Input('precursor_selection_use_exclusion_list', 'value'),
                Input('precursor_selection_exclusion_list_tolerance_value', 'value')],
@@ -370,6 +384,20 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
                                                peak_picking_method,
                                                peak_picking_snr,
                                                peak_picking_widths,
+                                               peak_picking_deisotope,
+                                               peak_picking_fragment_tolerance,
+                                               peak_picking_fragment_unit_ppm,
+                                               peak_picking_min_charge,
+                                               peak_picking_max_charge,
+                                               peak_picking_keep_only_deisotoped,
+                                               peak_picking_min_isopeaks,
+                                               peak_picking_max_isopeaks,
+                                               peak_picking_make_single_charged,
+                                               peak_picking_annotate_charge,
+                                               peak_picking_annotate_iso_peak_count,
+                                               peak_picking_use_decreasing_model,
+                                               peak_picking_start_intensity_check,
+                                               peak_picking_add_up_intensity,
                                                precursor_selection_top_n_value,
                                                precursor_selection_use_exclusion_list,
                                                precursor_selection_exclusion_list_tolerance_value,
@@ -431,6 +459,20 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
             PREPROCESSING_PARAMS['PEAK_PICKING']['method'] = peak_picking_method
             PREPROCESSING_PARAMS['PEAK_PICKING']['snr'] = peak_picking_snr
             PREPROCESSING_PARAMS['PEAK_PICKING']['widths'] = peak_picking_widths
+            PREPROCESSING_PARAMS['PEAK_PICKING']['deisotope'] = peak_picking_deisotope
+            PREPROCESSING_PARAMS['PEAK_PICKING']['fragment_tolerance'] = peak_picking_fragment_tolerance
+            PREPROCESSING_PARAMS['PEAK_PICKING']['fragment_unit_ppm'] = peak_picking_fragment_unit_ppm
+            PREPROCESSING_PARAMS['PEAK_PICKING']['min_charge'] = peak_picking_min_charge
+            PREPROCESSING_PARAMS['PEAK_PICKING']['max_charge'] = peak_picking_max_charge
+            PREPROCESSING_PARAMS['PEAK_PICKING']['keep_only_deisotoped'] = peak_picking_keep_only_deisotoped
+            PREPROCESSING_PARAMS['PEAK_PICKING']['min_isopeaks'] = peak_picking_min_isopeaks
+            PREPROCESSING_PARAMS['PEAK_PICKING']['max_isopeaks'] = peak_picking_max_isopeaks
+            PREPROCESSING_PARAMS['PEAK_PICKING']['make_single_charged'] = peak_picking_make_single_charged
+            PREPROCESSING_PARAMS['PEAK_PICKING']['annotate_charge'] = peak_picking_annotate_charge
+            PREPROCESSING_PARAMS['PEAK_PICKING']['annotate_iso_peak_count'] = peak_picking_annotate_iso_peak_count
+            PREPROCESSING_PARAMS['PEAK_PICKING']['use_decreasing_model'] = peak_picking_use_decreasing_model
+            PREPROCESSING_PARAMS['PEAK_PICKING']['start_intensity_check'] = peak_picking_start_intensity_check
+            PREPROCESSING_PARAMS['PEAK_PICKING']['add_up_intensity'] = peak_picking_add_up_intensity
             PREPROCESSING_PARAMS['PRECURSOR_SELECTION']['top_n'] = precursor_selection_top_n_value
             PREPROCESSING_PARAMS['PRECURSOR_SELECTION']['use_exclusion_list'] = precursor_selection_use_exclusion_list
             PREPROCESSING_PARAMS['PRECURSOR_SELECTION']['exclusion_list_tolerance'] = precursor_selection_exclusion_list_tolerance_value
@@ -649,6 +691,29 @@ def toggle_peak_picking_method_parameters(n_clicks, value):
         return toggle_locmax_style()
     elif value == 'cwt':
         return toggle_cwt_style()
+
+
+@app.callback([Output('peak_picking_deisotope_fragment_tolerance', 'style'),
+               Output('peak_picking_deisotope_fragment_unit_ppm_label', 'style'),
+               Output('peak_picking_deisotope_fragment_unit_ppm', 'style'),
+               Output('peak_picking_deisotope_min_charge', 'style'),
+               Output('peak_picking_deisotope_max_charge', 'style'),
+               Output('peak_picking_deisotope_keep_only_deisotoped', 'style'),
+               Output('peak_picking_deisotope_min_isopeaks', 'style'),
+               Output('peak_picking_deisotope_max_isopeaks', 'style'),
+               Output('peak_picking_deisotope_make_single_charged', 'style'),
+               Output('peak_picking_deisotope_annotate_charge', 'style'),
+               Output('peak_picking_deisotope_annotate_iso_peak_count', 'style'),
+               Output('peak_picking_deisotope_use_decreasing_model', 'style'),
+               Output('peak_picking_deisotope_start_intensity_check', 'style'),
+               Output('peak_picking_deisotope_add_up_intensity', 'style')],
+              [Input('edit_preprocessing_parameters', 'n_clicks'),
+               Input('peak_picking_deisotope', 'value')])
+def toggle_peak_picking_deisotope_parameters(n_clicks, value):
+    if value:
+        return toggle_deisotope_on_style()
+    elif not value:
+        return toggle_deisotope_off_style()
 
 
 @app.callback([Output('preview_precursor_list_modal', 'is_open'),
