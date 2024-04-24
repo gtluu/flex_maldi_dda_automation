@@ -1118,33 +1118,39 @@ def get_exclusion_list_layout():
             data=[],
             columns=[{'name': 'm/z', 'id': 'm/z'}],
             id='exclusion_list',
+            style_header={'textAlign': 'center'},
+            style_cell={'textAlign': 'center'},
             style_data_conditional=[],
             page_size=10
         ),
-        dbc.Button(
-            'Generate Exclusion List from Blank Spots',
-            id='generate_exclusion_list_from_blank_spots',
-            style={'margin': '10px',
+        html.Div(
+            [
+                dbc.Button(
+                    'Generate Exclusion List from Blank Spots',
+                    id='generate_exclusion_list_from_blank_spots',
+                    style={'margin': '20px'}
+                ),
+                dbc.Button(
+                    'View Blank Spectra Used to Generate Exclusion List',
+                    id='view_exclusion_list_spectra',
+                    style={'margin': '20px',
+                           'display': 'none'}
+                ),
+                dbc.Button(
+                    'Upload Exclusion List from CSV',
+                    id='upload_exclusion_list_from_csv',
+                    style={'margin': '20px'}
+                ),
+                dbc.Button(
+                    'Clear Exclusion List',
+                    id='clear_exclusion_list',
+                    style={'margin': '20px'}
+                )
+            ],
+            id='exclusion_list_buttons_div',
+            style={'justify-content': 'center',
                    'display': 'flex'}
-        ),
-        dbc.Button(
-            'View Blank Spectra Used to Generate Exclusion List',
-            id='view_exclusion_list_spectra',
-            style={'margin': '10px',
-                   'display': 'none'}
-        ),
-        dbc.Button(
-            'Upload Exclusion List from CSV',
-            id='upload_exclusion_list_from_csv',
-            style={'margin': '10px',
-                   'display': 'flex'}
-        ),
-        dbc.Button(
-            'Clear Exclusion List',
-            id='clear_exclusion_list',
-            style={'margin': '10px',
-                   'display': 'flex'}
-        ),
+        )
     ]
 
 
@@ -1199,19 +1205,30 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, outdir):
                         df.to_dict('records'),
                         columns=[{'name': str(col), 'id': str(col)} for col in df.columns],
                         id='plate_map',
-                        style_header={'display': 'none'},
+                        style_header={'display': 'none',
+                                      'textAlign': 'center'},
+                        style_cell={'textAlign': 'center'},
                         style_data_conditional=[
                             {'if': {'state': 'selected'},
                              'backgroundColor': 'inherit !important'}
                         ]
                     ),
-                    dbc.Button(
-                        'Mark Spots as Blank',
-                        id='mark_spot_as_blank'
-                    ),
-                    dbc.Button(
-                        'Clear Blank Spots',
-                        id='clear_blank_spots'
+                    html.Div(
+                        [
+                            dbc.Button(
+                                'Mark Spots as Blank',
+                                id='mark_spot_as_blank',
+                                style={'margin': '20px'}
+                            ),
+                            dbc.Button(
+                                'Clear Blank Spots',
+                                id='clear_blank_spots',
+                                style={'margin': '20px'}
+                            )
+                        ],
+                        id='plate_map_buttons_div',
+                        style={'justify-content': 'center',
+                               'display': 'flex'}
                     )
                 ],
                 id='plate_map_div',
@@ -1228,13 +1245,16 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, outdir):
             ),
             html.Div(
                 [
-                    dbc.Button('Edit Preprocessing Parameters', id='edit_preprocessing_parameters'),
-                    dbc.Button('Preview Precursor List', id='preview_precursor_list')
+                    dbc.Button('Edit Preprocessing Parameters',
+                               id='edit_preprocessing_parameters',
+                               style={'margin': '20px'}),
+                    dbc.Button('Preview Precursor List',
+                               id='preview_precursor_list',
+                               style={'margin': '20px'})
                 ],
                 id='precursor_processing_div',
-                className='one column',
-                style={'width': '97%',
-                       'margin': '20px'}
+                style={'justify-content': 'center',
+                       'display': 'flex'}
             ),
             html.Div(
                 id='spectrum',

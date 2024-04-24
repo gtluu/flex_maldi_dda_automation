@@ -198,7 +198,7 @@ def generate_exclusion_list_from_blank_spots(n_clicks):
         # undo preprocessing
         for spectrum in blank_spectra:
             spectrum.undo_all_processing()
-        return exclusion_list_df.to_dict('records'), {'margin': '10px', 'display': 'flex'}
+        return exclusion_list_df.to_dict('records'), {'margin': '20px', 'display': 'flex'}
 
 
 @app.callback([Output('exclusion_list_blank_spectra_modal', 'is_open'),
@@ -264,7 +264,7 @@ def toggle_exclusion_list_csv_error_modal(n_clicks, is_open):
 def clear_exclusion_list(n_clicks):
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'clear_exclusion_list.n_clicks':
-        return pd.DataFrame(columns=['m/z']).to_dict('records'), {'margin': '10px', 'display': 'none'}
+        return pd.DataFrame(columns=['m/z']).to_dict('records'), {'margin': '20px', 'display': 'none'}
 
 
 @app.callback(Output('edit_processing_parameters_modal', 'is_open'),
@@ -683,7 +683,7 @@ def toggle_align_spectra_parameters(n_clicks, align_spectra_checkbox, align_spec
 
 
 @app.callback([Output('peak_picking_snr', 'style'),
-               Output('peak_picking_widths', 'Style')],
+               Output('peak_picking_widths', 'style')],
               [Input('edit_preprocessing_parameters', 'n_clicks'),
                Input('peak_picking_method', 'value')])
 def toggle_peak_picking_method_parameters(n_clicks, value):
