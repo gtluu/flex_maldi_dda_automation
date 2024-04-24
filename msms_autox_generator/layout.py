@@ -5,7 +5,7 @@ import plotly.express as px
 from plotly_resampler import FigureResampler
 from dash import dcc, html, dash_table
 import dash_bootstrap_components as dbc
-from bin.util import *
+from msms_autox_generator.util import *
 
 
 def get_preprocessing_parameters_layout(param_dict):
