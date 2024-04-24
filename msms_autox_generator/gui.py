@@ -142,6 +142,8 @@ def clear_blank_spots(n_clicks):
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'clear_blank_spots.n_clicks':
         BLANK_SPOTS = []
+        for key, spectrum in INDEXED_DATA.items():
+            spectrum.undo_all_processing()
         return [
             {'if': {'state': 'selected'},
              'backgroundColor': 'inherit !important'}
@@ -195,9 +197,6 @@ def generate_exclusion_list_from_blank_spots(n_clicks):
         blank_feature_matrix = get_feature_matrix(blank_spectra, missing_value_imputation=False)
         # get exclusion list and return as df.to_dict('records')
         exclusion_list_df = pd.DataFrame(data={'m/z': np.unique(blank_feature_matrix['mz'].values)})
-        # undo preprocessing
-        for spectrum in blank_spectra:
-            spectrum.undo_all_processing()
         return exclusion_list_df.to_dict('records'), {'margin': '20px', 'display': 'flex'}
 
 
@@ -264,6 +263,9 @@ def toggle_exclusion_list_csv_error_modal(n_clicks, is_open):
 def clear_exclusion_list(n_clicks):
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'clear_exclusion_list.n_clicks':
+        # undo preprocessing
+        for key, spectrum in INDEXED_DATA.items():
+            spectrum.undo_all_processing()
         return pd.DataFrame(columns=['m/z']).to_dict('records'), {'margin': '20px', 'display': 'none'}
 
 
