@@ -68,6 +68,13 @@ app.layout = get_dashboard_layout(PREPROCESSING_PARAMS, PLATE_FORMAT, AUTOX_PATH
               [Input({'type': 'raw_data_path_button', 'index': MATCH}, 'n_clicks'),
                Input({'type': 'raw_data_path_button', 'index': MATCH}, 'id')])
 def update_raw_data_path(n_clicks, button_id):
+    """
+    Dash callback to update the raw data path during AutoXecute sequence data path validation.
+
+    :param n_clicks: Input signal when a given raw_data_path_button button is clicked.
+    :param button_id: ID of the raw_data_path_button clicked.
+    :return: Tuple of the updated Bruker .d directory path, whether the path is valid, and whether the path is invalid.
+    """
     global AUTOX_PATH_DICT
     main_tk_window = tkinter.Tk()
     main_tk_window.attributes('-topmost', True, '-alpha', 0)
@@ -88,6 +95,13 @@ def update_raw_data_path(n_clicks, button_id):
               [Input({'type': 'method_path_button', 'index': MATCH}, 'n_clicks'),
                Input({'type': 'method_path_button', 'index': MATCH}, 'id')])
 def update_method_path(n_clicks, button_id):
+    """
+    Dash callback to update the method path during AutoXecute sequence method path validation.
+
+    :param n_clicks: Input signal when a given method_path_button button is clicked.
+    :param button_id: ID of the method_path_button clicked.
+    :return: Tuple of the updated Bruker .m directory path, whether the path is valid, and whether the path is invalid.
+    """
     global AUTOX_PATH_DICT
     main_tk_window = tkinter.Tk()
     main_tk_window.attributes('-topmost', True, '-alpha', 0)
@@ -108,6 +122,17 @@ def update_method_path(n_clicks, button_id):
                State('autox_validation_modal', 'is_open')])
 def toggle_autox_validation_modal_close(n_clicks, raw_data_path_input, raw_data_path_input_valid,
                                         method_path_input_valid, is_open):
+    """
+    Dash callback to toggle the AutoXecute sequence data/method validation modal window. Data is imported when all
+    data and method paths are valid and the modal window is closed.
+
+    :param n_clicks: Input signal if the autox_validation_modal_close button is clicked.
+    :param raw_data_path_input: List of paths of all the raw data to be loaded.
+    :param raw_data_path_input_valid: List of booleans stating whether the raw data paths are valid or not.
+    :param method_path_input_valid: List of booleans stating whether the method paths are valid or not.
+    :param is_open: State signal to determine whether the autox_validation_modal modal window is open.
+    :return: Output signal to determine whether the autox_validation_modal modal window is open.
+    """
     global INDEXED_DATA
     if n_clicks:
         for i, j in zip(raw_data_path_input_valid, method_path_input_valid):
@@ -127,6 +152,16 @@ def toggle_autox_validation_modal_close(n_clicks, raw_data_path_input, raw_data_
                State('plate_map', 'style_data_conditional'),
                State('plate_map', 'data')])
 def mark_spots_as_blank(n_clicks, spots, cell_style, data):
+    """
+    Dash callback to mark a selected spot in the plate map as a 'blank' spot by changing the cell style and adding the
+    cell ID to the global variable BLANK_SPOTS.
+
+    :param n_clicks: Input signal if the mark_spot_as_blank button is clicked.
+    :param spots: Currently selected cells in the plate map.
+    :param cell_style: Current style of the selected cells in the plate map.
+    :param data: State signal containing plate map data.
+    :return: Style data with the updated blank spot style for the selected cells appended.
+    """
     global BLANK_SPOTS
     indices = [(i['row'], i['column_id']) for i in spots]
     BLANK_SPOTS = BLANK_SPOTS + [data[i['row']][i['column_id']] for i in spots]
@@ -138,6 +173,13 @@ def mark_spots_as_blank(n_clicks, spots, cell_style, data):
 @app.callback(Output('plate_map', 'style_data_conditional'),
               Input('clear_blank_spots', 'n_clicks'))
 def clear_blank_spots(n_clicks):
+    """
+    Dash callback to remove all blank spot styling from the plate map and remove all blank spot IDs from the global
+    variable BLANK_SPOTS.
+
+    :param n_clicks: Input signal if the clear_blank_spots button is clicked.
+    :return: Default style data for the plate map.
+    """
     global BLANK_SPOTS
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'clear_blank_spots.n_clicks':
@@ -154,6 +196,15 @@ def clear_blank_spots(n_clicks):
                 Output('view_exclusion_list_spectra', 'style')],
                Input('generate_exclusion_list_from_blank_spots', 'n_clicks'))
 def generate_exclusion_list_from_blank_spots(n_clicks):
+    """
+    Dash callback to perform preprocessing using parameters defined in the Edit Preprocessing Parameters modal window
+    on blank spots marked on the plate map and generate an exclusion list to be displayed in the exclusion list table
+    and used during sample precursor selection.
+
+    :param n_clicks: Input signal if the generate_exclusion_list_from_blank_spots button is clicked.
+    :return: Tuple of updated exclusion list data table data and style data to make the view_exclusion_list_spectra
+        button visible.
+    """
     global INDEXED_DATA
     global BLANK_SPOTS
     global PREPROCESSING_PARAMS
@@ -208,6 +259,16 @@ def generate_exclusion_list_from_blank_spots(n_clicks):
                Input('exclusion_list_blank_spectra_modal_close', 'n_clicks')],
               State('exclusion_list_blank_spectra_modal', 'is_open'))
 def view_exclusion_list_spectra(n_clicks_view, n_clicks_close, is_open):
+    """
+    Dash callback to view the preprocessed blank spot spectra that were used to generate the exclusion list.
+
+    :param n_clicks_view: Input signal if the view_exclusion_list_spectra button is clicked.
+    :param n_clicks_close: Input signal if the exclusion_list_blank_spectra_modal_close button is clicked.
+    :param is_open: State signal to determine whether the exclusion_list_blank_spectra_modal modal window is open.
+    :return: Tuple of the output signal to determine whether the exclusion_list_blank_spectra_modal modal window is
+        open, the list of blank spectra IDs to populate the dropdown menu options, the list of blank spectra IDs to
+        populate the dropdown menu values, and a blank figure to serve as a placeholder in the modal window body.
+    """
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'view_exclusion_list_spectra.n_clicks':
         # populate dropdown menu
@@ -222,7 +283,14 @@ def view_exclusion_list_spectra(n_clicks_view, n_clicks_close, is_open):
 @app.callback([Output('exclusion_list_blank_spectra_figure', 'figure'),
                Output('store_plot', 'data')],
               Input('exclusion_list_blank_spectra_id', 'value'))
-def update_preview_spectrum(value):
+def update_blank_spectrum(value):
+    """
+    Dash callback to plot the spectrum selected from the exclusion_list_blank_spectra_id dropdown using plotly.express
+    and plotly_resampler.FigureResampler.
+
+    :param value: Input signal exclusion_list_blank_spectra_id used as the key in INDEXED_DATA.
+    :return: Tuple of spectrum figure as a plotly.express.line plot and data store for plotly_resampler.
+    """
     global INDEXED_DATA
     fig = get_spectrum(INDEXED_DATA[value])
     #cleanup_file_system_backend()
@@ -235,6 +303,17 @@ def update_preview_spectrum(value):
               [State('exclusion_list', 'data'),
                State('exclusion_list_csv_error_modal', 'is_open')])
 def upload_exclusion_list_from_csv(n_clicks, exclusion_list, exclusion_list_csv_error_modal_is_open):
+    """
+    Dash callback to load an exclusion list from a single column CSV file containing the single column header 'm/z' and
+    populate the exclusion list table.
+
+    :param n_clicks: Input signal if the upload_exclusion_list_from_csv button is clicked.
+    :param exclusion_list: State signal to provide the current exclusion list data.
+    :param exclusion_list_csv_error_modal_is_open: State signal to determine whether the exclusion_list_csv_error_modal
+        modal window is open.
+    :return: Tuple of exclusion list data and output signal to determine whether the exclusion_list_csv_error_modal
+        modal window is open.
+    """
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'upload_exclusion_list_from_csv.n_clicks':
         main_tk_window = tkinter.Tk()
@@ -252,6 +331,13 @@ def upload_exclusion_list_from_csv(n_clicks, exclusion_list, exclusion_list_csv_
               Input('exclusion_list_csv_error_modal_close', 'n_clicks'),
               State('exclusion_list_csv_error_modal', 'is_open'))
 def toggle_exclusion_list_csv_error_modal(n_clicks, is_open):
+    """
+    Dash callback to toggle the CSV exclusion list upload error message modal window.
+
+    :param n_clicks: Input signal if the exclusion_list_csv_error_modal_close button is clicked.
+    :param is_open: State signal to determine whether the exclusion_list_csv_error_modal modal window is open.
+    :return: Output signal to determine whether the exclusion_list_csv_error_modal modal window is open.
+    """
     if n_clicks:
         return not is_open
     return is_open
@@ -261,6 +347,12 @@ def toggle_exclusion_list_csv_error_modal(n_clicks, is_open):
                Output('view_exclusion_list_spectra', 'style')],
               Input('clear_exclusion_list', 'n_clicks'))
 def clear_exclusion_list(n_clicks):
+    """
+    Dash callback to clear the current exclusion list and hide the View Exclusion List Spectra button.
+
+    :param n_clicks: Input signal if the clear_exclusion_list button is clicked.
+    :return: Tuple of exclusion list data and style data to hide the view_exclusion_list_spectra button.
+    """
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'clear_exclusion_list.n_clicks':
         # undo preprocessing
@@ -404,6 +496,98 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
                                                precursor_selection_use_exclusion_list,
                                                precursor_selection_exclusion_list_tolerance_value,
                                                is_open):
+    """
+    Dash callback to toggle the preprocessing parameters modal window, populate the current preprocessing parameters
+    saved in the global variable PREPROCESSING_PARAMS, and save any modified preprocessing parameters to
+    PREPROCESSING_PARAMS if the Save button is clicked.
+
+    :param n_clicks_button: Input signal if the edit_preprocessing_parameters button is clicked.
+    :param n_clicks_save: Input signal if the edit_preprocessing_parameters_save button is clicked.
+    :param n_clicks_cancel: Input signal if the edit_preprocessing_parameters_cancel button is clicked.
+    :param trim_spectrum_checkbox: Whether to perform spectrum trimming during preprocessing.
+    :param trim_spectrum_lower_mass_range: Mass in daltons to use for the lower mass range during spectrum trimming.
+    :param trim_spectrum_upper_mass_range: Mass in Daltons to use for the upper mass range during spectrum trimming.
+    :param transform_intensity_checkbox: Whether to perform intensity transformation during preprocessing.
+    :param transform_intensity_method: Method to use for intensity transformation. Either square root ('sqrt'), natural
+        log ('log'), log2 ('log2'), or log10 ('log10') transformation.
+    :param smooth_baseline_checkbox: Whether to perform baseline smoothing during preprocessing.
+    :param smooth_baseline_method: Method to use for baseline smoothing. Either Savitzky Golay ('SavitzkyGolay'),
+        apodization ('apodization'), rebin ('rebin'), fast change ('fast_change'), or median ('median').
+    :param smooth_baseline_window_length: The length of the filter window (i.e. number of coefficients).
+    :param smooth_baseline_polyorder: The order of the polynomial used to fit the samples. Must be less than
+        window_length.
+    :param smooth_baseline_delta_mz: New m/z dimension bin width.
+    :param smooth_baseline_diff_thresh: Numeric change to remove.
+    :param remove_baseline_checkbox: Whether to perform baseline removal during preprocessing.
+    :param remove_baseline_method: Method to use for baseline removal. Either statistics-sensitive non-linear iterative
+        peak-clipping ('SNIP'), TopHat ('TopHat'), median ('Median'), ZhangFit ('ZhangFit'), modified polynomial
+        fit ('ModPoly'), or improved modified polynomial fit ('IModPoly').
+    :param remove_baseline_min_half_window: The minimum half window size used for morphological operations.
+    :param remove_baseline_max_half_window: The maximum number of iterations/maximum half window size used for
+        morphological operations. Should be (w-1)/2 where w is the index-based width of feature or peak.
+    :param remove_baseline_decreasing: If False, will iterate through window sizes from 1 to max_half_window. If True,
+        will reverse the order and iterate from max_half_window to 1 (gives smoother baseline).
+    :param remove_baseline_smooth_half_window: The half window to use for smoothing the data. If greater than 0, will
+        perform a moving average smooth on the data for each window to give better results for noisy data.
+    :param remove_baseline_filter_order: If the measured data has a more complicated baseline consisting of other
+        elements such as Compton edges, thena  higher filter_order should be selected.
+    :param remove_baseline_sigma: The standard deviation of the smoothing Gaussian kernal. If None, uses
+        (2 * smooth_half_window + 1) / 6.
+    :param remove_baseline_increment: The step size for iterating half windows.
+    :param remove_baseline_max_hits: The number of consecutive half windows that must produce the same morphological
+        opening before accepting the half window as the optimum value.
+    :param remove_baseline_window_tol: The tolerance value for considering two morphological openings as equivalent.
+    :param remove_baseline_lambda_: Affects smoothness of the resulting background. The larger the lambda, the smoother
+        the background.
+    :param remove_baseline_porder: Adaptive iteratively reweighted penalized least squares for baseline fitting.
+    :param remove_baseline_repetition: How many iterations to run.
+    :param remove_baseline_degree: Polynomial degree.
+    :param remove_baseline_gradient: Gradient for polynomial loss. Measures incremental gain over each iteration. If
+        gain in any iteration is less than this, further improvement will stop.
+    :param normalize_intensity_checkbox: Whether to perform intensity normalization during preprocessing.
+    :param normalize_intensity_method: Method to use for normalizaton. Either total ion count ('tic'), root mean
+        squared ('rms'), median absolute deviation ('mad'), or square root ('sqrt').
+    :param bin_spectrum_checkbox: Whether to perform spectrum binning during preprocessing.
+    :param bin_spectrum_n_bins: Number of bins to use.
+    :param bin_spectrum_lower_mass_range: Mass in daltons to use for the lower mass range during spectrum binning.
+    :param bin_spectrum_upper_mass_range: Mass in Daltons to use for the upper mass range during spectrum binning.
+    :param peak_picking_method: Method to use for peak picking. Either local maxima ('locmax') or continuous wavelet
+        transformation ('cwt').
+    :param peak_picking_snr: Minimum signal-to-noise ratio required to consider peak.
+    :param peak_picking_widths: Required width of peaks in samples. If using 'cwt' method, used for calculating the CWT
+        matrix. Range should cover the expected width of peaks of interest.
+    :param peak_picking_deisotope: Whether to perform deisotoping/ion deconvolution. Deisotoping performed using
+        pyopenms.Deisotoper.
+    :param peak_picking_fragment_tolerance: The tolerance used to match isotopic peaks.
+    :param peak_picking_fragment_unit_ppm: Whether ppm or m/z is used as tolerance.
+    :param peak_picking_min_charge: The minimum charge considered.
+    :param peak_picking_max_charge: The maximum charge considered.
+    :param peak_picking_keep_only_deisotoped: If True, only monoisotopic peaks of fragments with isotopic pattern are
+        retained.
+    :param peak_picking_min_isopeaks: The minimum number of isotopic peaks (at least 2) required for an isotopic
+        cluster.
+    :param peak_picking_max_isopeaks: The maximum number of isotopic peaks (at least 2) required for an isotopic
+        cluster.
+    :param peak_picking_make_single_charged: Whether to convert deisotoped monoisotopic peak to single charge.
+    :param peak_picking_annotate_charge: Whether to annotate the charge to the peaks in
+        pyopenms.MSSpectrum.IntegerDataArray: 'charge'.
+    :param peak_picking_annotate_iso_peak_count: Whether to annotate the number of isotopic peaks in a pattern for each
+        monoisotopic peak in pyopenms.MSSpectrum.IntegerDataArray: 'iso_peak_count'.
+    :param peak_picking_use_decreasing_model: Whether to use a simple averagine model that expects heavier isotopes to
+        have less intensity. If False, no intensity checks are applied.
+    :param peak_picking_start_intensity_check: Number of the isotopic peak from which the decreasing model should be
+        applied. <= 1 will force the monoisotopic peak to be most intense. 2 will allow the monoisotopic peak to be
+        less intense than the 2nd peak. 3 will allow the monoisotopic peak and the 2nd peak to be less intense than the
+        3rd, etc. A number higher than max_isopeaks will effectively disable use_decreasing_model completely.
+    :param peak_picking_add_up_intensity: Whether to sum up the total intensity of each isotopic pattern into the
+        intensity of the reported monoisotopic peak.
+    :param precursor_selection_top_n_value: Number of desired precursors selected for MS/MS acquisition.
+    :param precursor_selection_use_exclusion_list: Whether to use exclusion list during precursor selection.
+    :param precursor_selection_exclusion_list_tolerance_value: Tolerance in daltons to use when comparing peak lists to
+        the exclusion list during peak picking and precursor selection.
+    :param is_open: State signal to determine whether the edit_preprocessing_parameters_modal modal window is open.
+    :return: Output signal to determine whether the edit_preprocessing_parameters_modal modal window is open.
+    """
     global PREPROCESSING_PARAMS
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if (changed_id == 'edit_preprocessing_parameters.n_clicks' or
@@ -487,6 +671,15 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
                Input('edit_processing_parameters_modal_saved_close', 'n_clicks')],
               State('edit_processing_parameters_modal_saved', 'is_open'))
 def toggle_edit_processing_parameters_saved_modal(n_clicks_save, n_clicks_close, is_open):
+    """
+    Dash callback to toggle the preprocessing parameters save confirmation message modal window.
+
+    :param n_clicks_save: Input signal if the edit_preprocessing_parameters_save button is clicked.
+    :param n_clicks_close: Input signal if the edit_preprocessing_parameters_close button is clicked.
+    :param is_open: State signal to determine whether the edit_preprocessing_parameters_modal_saved modal window is
+        open.
+    :return: Output signal to determine whether the edit_preprocessing_parameters_modal_saved modal window is open.
+    """
     if n_clicks_save or n_clicks_close:
         return not is_open
     return is_open
@@ -497,6 +690,14 @@ def toggle_edit_processing_parameters_saved_modal(n_clicks_save, n_clicks_close,
               [Input('edit_preprocessing_parameters', 'n_clicks'),
                Input('trim_spectrum_checkbox', 'value')])
 def toggle_trim_spectrum_parameters(n_clicks, value):
+    """
+    Dash callback to toggle whether spectrum trimming parameters are visible depending on whether spectrum trimming is
+    enabled or disabled in the preprocessing parameters modal window.
+
+    :param n_clicks: Input signal if the edit_preprocessing_parameters button is clicked.
+    :param value: Input signal to determine whether spectrum trimming is enabled or disabled.
+    :return: List of dictionaries containing style template to show or hide parameters.
+    """
     if value:
         return [copy.deepcopy(SHOWN),
                 copy.deepcopy(SHOWN)]
@@ -510,6 +711,14 @@ def toggle_trim_spectrum_parameters(n_clicks, value):
               [Input('edit_preprocessing_parameters', 'n_clicks'),
                Input('transform_intensity_checkbox', 'value')])
 def toggle_transform_intensity_parameters(n_clicks, value):
+    """
+    Dash callback to toggle whether intensity transformation parameters are visible depending on whether intensity
+    transformation is enabled or disabled in the preprocessing parameters modal window.
+
+    :param n_clicks: Input signal if the edit_preprocessing_parameters button is clicked.
+    :param value: Input signal to determine whether intensity transformation is enabled or disabled.
+    :return: List of dictionaries containing style template to show or hide parameters.
+    """
     if value:
         return [copy.deepcopy(SHOWN),
                 copy.deepcopy(SHOWN)]
@@ -528,6 +737,17 @@ def toggle_transform_intensity_parameters(n_clicks, value):
                Input('smooth_baseline_checkbox', 'value'),
                Input('smooth_baseline_method', 'value')])
 def toggle_smooth_baseline_method_parameters(n_clicks, smooth_baseline_checkbox, smooth_baseline_method):
+    """
+    Dash callback to toggle whether baseline smoothing parameters are visible depending on whether baseline smoothing
+    is enabled or disabled in the preprocessing parameters modal window. Also toggles which baseline smoothing
+    parameters are visible depending on the baseline smoothing method selected in the preprocessing parameters modal
+    window.
+
+    :param n_clicks: Input signal if the edit_preprocessing_parameters button is clicked.
+    :param smooth_baseline_checkbox: Input signal to determine whether baseline smoothing is enabled or disabled.
+    :param smooth_baseline_method: Input signal to obtain the currently selected baseline smoothing method.
+    :return: List of dictionaries containing style template to show or hide parameters.
+    """
     if smooth_baseline_checkbox:
         if smooth_baseline_method == 'SavitzkyGolay':
             return [copy.deepcopy(SHOWN), copy.deepcopy(SHOWN)] + toggle_savitzky_golay_style()
@@ -568,6 +788,17 @@ def toggle_smooth_baseline_method_parameters(n_clicks, smooth_baseline_checkbox,
                Input('remove_baseline_checkbox', 'value'),
                Input('remove_baseline_method', 'value')])
 def toggle_remove_baseline_method_parameters(n_clicks, remove_baseline_checkbox, remove_baseline_method):
+    """
+    Dash callback to toggle whether baseline removal parameters are visible depending on whether baseline removal
+    is enabled or disabled in the preprocessing parameters modal window. Also toggles which baseline removal
+    parameters are visible depending on the baseline removal method selected in the preprocessing parameters modal
+    window.
+
+    :param n_clicks: Input signal if the edit_preprocessing_parameters button is clicked.
+    :param remove_baseline_checkbox: Input signal to determine whether baseline removal is enabled or disabled.
+    :param remove_baseline_method: Input signal to obtain the currently selected baseline removal method.
+    :return: List of dictionaries containing style template to show or hide parameters.
+    """
     if remove_baseline_checkbox:
         if remove_baseline_method == 'SNIP':
             return [copy.deepcopy(SHOWN), copy.deepcopy(SHOWN)] + toggle_snip_style()
@@ -605,6 +836,14 @@ def toggle_remove_baseline_method_parameters(n_clicks, remove_baseline_checkbox,
               [Input('edit_preprocessing_parameters', 'n_clicks'),
                Input('normalize_intensity_checkbox', 'value')])
 def toggle_normalize_intensity_parameters(n_clicks, value):
+    """
+    Dash callback to toggle whether intensity normalization parameters are visible depending on whether intensity
+    normalization is enabled or disabled in the preprocessing parameters modal window.
+
+    :param n_clicks: Input signal if the edit_preprocessing_parameters button is clicked.
+    :param value: Input signal to determine whether intensity normalization is enabled or disabled.
+    :return: List of dictionaries containing style template to show or hide parameters.
+    """
     if value:
         return [copy.deepcopy(SHOWN),
                 copy.deepcopy(SHOWN)]
@@ -619,6 +858,14 @@ def toggle_normalize_intensity_parameters(n_clicks, value):
               [Input('edit_preprocessing_parameters', 'n_clicks'),
                Input('bin_spectrum_checkbox', 'value')])
 def toggle_bin_spectrum_parameters(n_clicks, value):
+    """
+    Dash callback to toggle whether spectrum binning parameters are visible depending on whether spectrum binning is
+    enabled or disabled in the preprocessing parameters modal window.
+
+    :param n_clicks: Input signal if the edit_preprocessing_parameters button is clicked.
+    :param value: Input signal to determine whether spectrum binning is enabled or disabled.
+    :return: List of dictionaries containing style template to show or hide parameters.
+    """
     if value:
         return [copy.deepcopy(SHOWN),
                 copy.deepcopy(SHOWN),
@@ -689,6 +936,14 @@ def toggle_align_spectra_parameters(n_clicks, align_spectra_checkbox, align_spec
               [Input('edit_preprocessing_parameters', 'n_clicks'),
                Input('peak_picking_method', 'value')])
 def toggle_peak_picking_method_parameters(n_clicks, value):
+    """
+    Dash callback to toggle which peak picking parameters are visible depending on the peak picking method selected in
+    the preprocessing parameters modal window.
+
+    :param n_clicks: Input signal if the edit_preprocessing_parameters button is clicked.
+    :param value: Input signal to obtain the currently selected peak picking method.
+    :return: List of dictionaries containing style template to show or hide parameters.
+    """
     if value == 'locmax':
         return toggle_locmax_style()
     elif value == 'cwt':
@@ -712,6 +967,13 @@ def toggle_peak_picking_method_parameters(n_clicks, value):
               [Input('edit_preprocessing_parameters', 'n_clicks'),
                Input('peak_picking_deisotope', 'value')])
 def toggle_peak_picking_deisotope_parameters(n_clicks, value):
+    """
+    Dash callback to toggle whether deisotoping parameters are visible.
+
+    :param n_clicks: Input signal if the edit_preprocessing_parameters button is clicked.
+    :param value: Input signal to obtain the current status of whether deisotoping is enabled or disabled.
+    :return: List of dictionaries containing style template to show or hide parameters.
+    """
     if value:
         return toggle_deisotope_on_style()
     elif not value:
@@ -732,6 +994,20 @@ def preview_precursor_list(n_clicks_preview,
                            n_clicks_modal_run,
                            is_open,
                            exclusion_list):
+    """
+    Dash callback to preprocess sample spectra based on current preprocessing parameters and view the spectra in a
+    modal window. In the modal window, going Back will reset and undo all preprocessing, while continuing to generate
+    the MS/MS AutoXecute sequences closes the preview_precursor_list_modal modal window.
+
+    :param n_clicks_preview: Input signal if the preview_precursor_list button is clicked.
+    :param n_clicks_modal_back: Input signal if the preview_precursor_list_modal_back button is clicked.
+    :param n_clicks_modal_run: Input signal if the preview_precursor_list_modal_run button is clicked.
+    :param is_open: State signal to determine whether the preview_precursor_list_modal modal window is open
+    :param exclusion_list: State signal to provide the current exclusion list data.
+    :return: Tuple of output signal to determine whether the preview_precursor_list_modal modal window is open, the
+        list of spectra IDs to populate the dropdown menu options, the list of spectra IDs to populate the dropdown
+        menu values, and a blank figure to serve as a placeholder in the modal window body.
+    """
     global INDEXED_DATA
     global PREPROCESSING_PARAMS
     global BLANK_SPOTS
@@ -807,6 +1083,13 @@ def preview_precursor_list(n_clicks_preview,
                Output('store_plot', 'data')],
               Input('preview_id', 'value'))
 def update_preview_spectrum(value):
+    """
+    Dash callback to plot the spectrum selected from the preview_id dropdown using plotly.express and
+    plotly_resampler.FigureResampler.
+
+    :param value: Input signal preview_id used as the key in INDEXED_DATA.
+    :return: Tuple of spectrum figure as a plotly.express.line plot and data store for plotly_resampler.
+    """
     global INDEXED_DATA
     fig = get_spectrum(INDEXED_DATA[value])
     #cleanup_file_system_backend()
@@ -823,6 +1106,23 @@ def update_preview_spectrum(value):
                State('run_method_value', 'value'),
                State('run_method_checkbox', 'value')])
 def toggle_run_modal(preview_run_n_clicks, run_n_clicks, run_is_open, success_is_open, outdir, method, method_checkbox):
+    """
+    Dash callback to toggle the run_modal modal window and create the new MS/MS AutoXecute sequence. A new modal window
+    displaying a success message and the output directory of the resulting AutoXecute sequence will be shown upon
+    success.
+
+    :param preview_run_n_clicks: Input signal if the preview_precursor_list_modal_run button is clicked.
+    :param run_n_clicks: Input signal if the run_button button is clicked.
+    :param run_is_open: State signal to determine whether the run_modal modal window is open.
+    :param success_is_open: State signal to determine whether the run_success_modal modal window is open.
+    :param outdir: Path to folder in which to write the output AutoXecute sequence. Will also be used as the directory
+        for the resulting AutoXecute data.
+    :param method: Path to the new Bruker .m directory to be used in the AutoXecute sequence.
+    :param method_checkbox: Whether to use user specified Bruker .m directory method file or to use the original
+        methods in the new AutoXecute sequence.
+    :return: Tuple of output signal to determine whether the run_modal modal window is open and output signal to
+        determine whether the run_modal_success modal window is open.
+    """
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'preview_precursor_list_modal_run.n_clicks':
         return not run_is_open, success_is_open
@@ -867,6 +1167,13 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, run_is_open, success_is
               Input('run_success_close', 'n_clicks'),
               State('run_success_modal', 'is_open'))
 def toggle_run_success_modal(n_clicks, is_open):
+    """
+    Dash callback to toggle the run success message modal window.
+
+    :param n_clicks: Input signal if the run_success_close button is clicked.
+    :param is_open: State signal to determine whether the run_success_modal modal window is open.
+    :return: Output signal to determine whether the run_success_modal modal window is open.
+    """
     if n_clicks:
         return not is_open
     return is_open
@@ -876,6 +1183,15 @@ def toggle_run_success_modal(n_clicks, is_open):
               [Input('preview_precursor_list_modal_run', 'n_clicks'),
                Input('run_method_checkbox', 'value')])
 def toggle_run_new_method_selection_input(n_clicks, value):
+    """
+    Dash callback to toggle whether the method input group is visible depending on whether using a new method for the
+    new AutoXecute sequence is enabled or disabled.
+
+    :param n_clicks: Input signal if the preview_precursor_list_modal_run button is clicked.
+    :param value: Whether to use user specified Bruker .m directory method file or to use the original methods in the
+        new AutoXecute sequence.
+    :return: List of dictionaries containing style template to show or hide parameters.
+    """
     if value:
         return copy.deepcopy(SHOWN)
     elif not value:
@@ -887,6 +1203,13 @@ def toggle_run_new_method_selection_input(n_clicks, value):
                Output('run_output_directory_value', 'invalid')],
               Input('run_select_output_directory', 'n_clicks'))
 def select_new_output_directory(n_clicks):
+    """
+    Dash callback to select a new user defined output directory for the new AutoXecute sequence and the resulting data
+    acquired using that sequence in timsControl.
+
+    :param n_clicks: Input signal if the run_select_output_directory button is clicked.
+    :return: Tuple of the updated output directory path, whether the path is valid, and whether the path is invalid.
+    """
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'run_select_output_directory.n_clicks':
         main_tk_window = tkinter.Tk()
@@ -904,6 +1227,13 @@ def select_new_output_directory(n_clicks):
                Output('run_method_value', 'invalid')],
               Input('run_select_method', 'n_clicks'))
 def select_new_method_(n_clicks):
+    """
+    Dash callback to select a new user defined Bruker .m method for the new AutoXecute sequence and the resulting data
+    acquired using that sequence in timsControl.
+
+    :param n_clicks: Input signal if the run_select_method button is clicked.
+    :return: Tuple of the updated Bruker .m directory path, whether the path is valid, and whether the path is invalid.
+    """
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'run_select_method.n_clicks':
         main_tk_window = tkinter.Tk()
@@ -922,6 +1252,13 @@ def select_new_method_(n_clicks):
               prevent_initial_call=True,
               memoize=True)
 def resample_spectrum(relayoutdata: dict, fig: FigureResampler):
+    """
+    Dash callback used for spectrum resampling to improve plotly figure performance.
+
+    :param relayoutdata: Input signal with dictionary with spectrum_plot relayoutData.
+    :param fig: State signal for data store for plotly_resampler.
+    :return: Figure object used to update spectrum_plot figure.
+    """
     if fig is None:
         return no_update
     return fig.construct_update_data_patch(relayoutdata)

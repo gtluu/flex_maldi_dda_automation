@@ -9,6 +9,12 @@ from msms_autox_generator.util import *
 
 
 def get_preprocessing_parameters_layout(param_dict):
+    """
+    Obtain the layout for the preprocessing parameters modal window body.
+
+    :param param_dict: Dictionary of parameters used to populate default values.
+    :return: List of divs containing the layout for the preprocessing parameters modal window.
+    """
     trim_spectrum_parameters = html.Div(
         [
             html.H5('Spectrum Trimming Parameters'),
@@ -956,6 +962,13 @@ def get_preprocessing_parameters_layout(param_dict):
 
 
 def get_autox_validation_modal_layout(autox_path_dict):
+    """
+    Obtain the layout for the AutoXecute sequence data/method path validation modal window body.
+
+    :param autox_path_dict: Nested dictionary containing spot group sample names, data paths, and method paths from the
+        .run file.
+    :return: List of divs containing the layout for the validation modal window.
+    """
     modal_divs = []
     # check if data and methods exist
     for index, path_dict in autox_path_dict.items():
@@ -1032,6 +1045,13 @@ def get_autox_validation_modal_layout(autox_path_dict):
 
 
 def get_run_layout(outdir):
+    """
+    Obtain the layout for the MS/MS AutoXecute generation parameters modal window body.
+
+    :param outdir: Path to folder in which to write the output AutoXecute sequence. Will also be used as the directory
+        for the resulting AutoXecute data.
+    :return: List of divs containing the layout for the MS/MS AutoXecute generation parameters modal window.
+    """
     if os.path.exists(outdir):
         return [
             dbc.InputGroup(
@@ -1113,6 +1133,11 @@ def get_run_layout(outdir):
 
 
 def get_exclusion_list_layout():
+    """
+    Obtain the layout for the exclusion list section of the main dashboard.
+
+    :return: List of divs containing the layout for the exclusion list section of the main dashboard.
+    """
     return [
         dash_table.DataTable(
             data=[],
@@ -1155,6 +1180,12 @@ def get_exclusion_list_layout():
 
 
 def get_exclusion_list_spectra_layout():
+    """
+    Obtain the layout for the blank spectra viewing modal window body. Blank spectra available are those used to
+    generate the exclusion list.
+
+    :return: List of spectraum spot name dropdown and figure elements.
+    """
     return [
         dcc.Dropdown(
             id='exclusion_list_blank_spectra_id',
@@ -1175,6 +1206,11 @@ def get_exclusion_list_spectra_layout():
 
 # TODO: replace dropdown with plate map
 def get_preview_layout():
+    """
+    Obtain the layout for the sample spectra preview modal window body.
+
+    :return: List of spectrum spot name dropdown and figure elements.
+    """
     return [
         dcc.Dropdown(
             id='preview_id',
@@ -1194,6 +1230,17 @@ def get_preview_layout():
 
 
 def get_dashboard_layout(param_dict, plate_format, autox_path_dict, outdir):
+    """
+    Obtain the main dashboard layout.
+
+    :param param_dict: Dictionary of parameters used to populate default values.
+    :param plate_format: Plate geometry used to generate the plate map table.
+    :param autox_path_dict: Nested dictionary containing spot group sample names, data paths, and method paths from the
+        .run file.
+    :param outdir: Path to folder in which to write the output AutoXecute sequence. Will also be used as the directory
+        for the resulting AutoXecute data.
+    :return: Div containing the main dashboard layout.
+    """
     df = get_plate_map(plate_format)
     return html.Div(
         [
