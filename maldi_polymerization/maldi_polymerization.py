@@ -24,7 +24,11 @@ INSTRUMENT_SOURCE_TYPE = {'0': 'unspecified',
 
 
 def get_args():
+    """
+    Parse command line parameters, including required and optional parameters.
 
+    :return: Arguments with default or user specified values.
+    """
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--input',
@@ -62,13 +66,40 @@ def get_args():
 
 
 class PartialTsfData(TsfData):
+    """
+    Class containing metadata from TSF files and methods from TDF-SDK library to work with TSF format data. All methods
+    and attribute inherited from pyTDFSDK.classes.TsfData. Adds parsing for lower and upper values for the acquisition
+    m/z range.
+
+    :param bruker_d_folder_name: Path to a Bruker .d directory containing analysis.tsf.
+    :type bruker_d_folder_name: str
+    :param tdf_sdk: Library initialized by pyTDFSDK.init_tdf_sdk.init_tdf_sdk_api().
+    :type tdf_sdk: ctypes.CDLL
+    :param use_recalibrated_state: Whether to use recalibrated data (True) or not (False), defaults to True.
+    :type use_recalibrated_state: bool
+    """
     def __init__(self, bruker_d_folder_name, tdf_sdk, use_recalibrated_state=True):
+        """
+        Constructor Method
+        """
         super().__init__(bruker_d_folder_name, tdf_sdk, use_recalibrated_state)
         self.MzAcqRangeLower = float(self.analysis['GlobalMetadata']['MzAcqRangeLower'])
         self.MzAcqRangeUpper = float(self.analysis['GlobalMetadata']['MzAcqRangeUpper'])
 
 
 def trim_spectrum(spectrum, lower_mass_range, upper_mass_range):
+    """
+    Trim spectrum to include only features between the lower_mass_range (exclusive) and upper_mass_range (inclusive).
+
+    :param spectrum: Spectrum to be trimmed.
+    :type spectrum: pyTDFSDK.classes.TsfSpectrum
+    :param lower_mass_range: Mass in daltons to use for the lower mass range.
+    :type lower_mass_range: float
+    :param upper_mass_range: Mass in Daltons to use for the upper mass range.
+    :type upper_mass_range: float
+    :return: Trimmed spectrum.
+    :rtype: pyTDFSDK.classes.TsfSpectrum
+    """
     indices = np.where((spectrum.mz_array > lower_mass_range) & (spectrum.mz_array <= upper_mass_range))[0]
     spectrum.mz_array = copy.deepcopy(spectrum.mz_array[indices])
     spectrum.intensity_array = copy.deepcopy(spectrum.intensity_array[indices])
@@ -77,21 +108,49 @@ def trim_spectrum(spectrum, lower_mass_range, upper_mass_range):
 
 
 def i_activate_the_magic_card_polymerization(sorted_dlist_lower, frame, mode, encoding):
-    spectra = [(TsfSpectrum(data, frame=frame, mode=mode, profile_bins=0, encoding=encoding),
-                data)
+    """
+    Combine the m/z and intensity arrays of multiple spectra.
+
+    :param sorted_dlist_lower: List of PartialTsfData objects sorted by MzAcqRangeLower from lowest to highest.
+    :type sorted_dlist_lower: list[PartialTsfData]
+    :param frame: ID of the frame of interest.
+    :type frame: int
+    :param mode: Data array mode, either "profile", "centroid", or "raw".
+    :type mode: str
+    :param encoding: Encoding bit mode, either "64" or "32"
+    :type encoding: int
+    :return: Tuple of the new m/z array and new intensity array
+    :rtype: tuple[numpy.array]
+    """
+    spectra = [(TsfSpectrum(data, frame=frame, mode=mode, profile_bins=0, encoding=encoding), data)
                for data in sorted_dlist_lower]
-    spectra = [(trim_spectrum(spectrum, data.MzAcqRangeLower, data.MzAcqRangeUpper),
-                data)
+    spectra = [(trim_spectrum(spectrum, data.MzAcqRangeLower, data.MzAcqRangeUpper), data)
                for spectrum, data in spectra]
     mz_arrays = [copy.deepcopy(spectrum.mz_array) for spectrum, data in spectra]
-    intensity_arrays = [copy.deepcopy(spectrum.intensity_array)
-                        for spectrum, data in spectra]
+    intensity_arrays = [copy.deepcopy(spectrum.intensity_array) for spectrum, data in spectra]
     fusion_mz_array = np.concatenate(mz_arrays)
     fusion_intensity_array = np.concatenate(intensity_arrays)
     return fusion_mz_array, fusion_intensity_array
 
 
 def write_fusion_mzml_metadata(writer, dlist, filenames, mode, barebones_metadata):
+    """
+    Write metadata to mzML file using psims. Include spectral metadata, source files, software list, instrument
+    configuration, and data processing.
+
+    :param writer: Instance of psims.mzml.MzMLWriter for output file.
+    :type writer: psims.mzml.MzMLWriter
+    :param dlist: List of PartialTsfData objects.
+    :type dlist: list[PartialTsfData]
+    :param filenames: Names of the files being combined in this workflow.
+    :type filenames: list[str]
+    :param mode: Mode command line parameter, either "profile", "centroid", or "raw".
+    :type mode: str
+    :param barebones_metadata: If True, omit software and data processing metadata in the resulting mzML files. Used
+        for compatibility with downstream analysis software that does not have support for newer CV params or
+        UserParams.
+    :type barebones_metadata: bool
+    """
     # Write controlled vocabularies
     writer.controlled_vocabularies()
     # Basic file descriptions.
@@ -180,8 +239,30 @@ def write_fusion_mzml_metadata(writer, dlist, filenames, mode, barebones_metadat
     writer.instrument_configuration_list([inst_config])
 
 
-def write_fusion_mzml(dlist, sorted_dlist_lower, filenames, output,
-                      mode, compression, encoding, barebones_metadata):
+def write_fusion_mzml(dlist, sorted_dlist_lower, filenames, output, mode, compression, encoding, barebones_metadata):
+    """
+    Combine and write multiple spectra with staggered non-overlapping mass range windows to a single spectrum in an
+    mzML file.
+
+    :param dlist: List of PartialTsfData objects.
+    :type dlist: list[PartialTsfData]
+    :param sorted_dlist_lower: List of PartialTsfData objects sorted by MzAcqRangeLower from lowest to highest.
+    :type sorted_dlist_lower: list[PartialTsfData]
+    :param filenames: Names of the files being combined in this workflow.
+    :type filenames: list[str]
+    :param output: Path to output mzML file.
+    :type output: str
+    :param mode: Data array mode, either "profile", "centroid", or "raw".
+    :type mode: str
+    :param compression: Compression mode, either "zlib" or "none".
+    :type compression: str
+    :param encoding: Encoding bit mode, either "64" or "32"
+    :type encoding: int
+    :param barebones_metadata: If True, omit software and data processing metadata in the resulting mzML files. Used
+        for compatibility with downstream analysis software that does not have support for newer CV params or
+        UserParams.
+    :type barebones_metadata: bool
+    """
     # initialize mzml writer
     writer = MzMLWriter(output, close=True)
     with writer:
@@ -236,6 +317,15 @@ def write_fusion_mzml(dlist, sorted_dlist_lower, filenames, output,
 
 
 def run():
+    """
+    Combine and write multiple spectra with staggered non-overlapping mass range windows to a single spectrum in an
+    mzML file. Performs 3 checks to ensure mass ranges don't overlap:
+
+    1. Make sure order of lists sorted by both lower and upper mass range are the same.
+    2. Make sure the mass ranges do not overlap.
+    3. Make sure the first lower mass range is the lowest value of all mass ranges and the last upper mass range is the
+        largest of all mass ranges.
+    """
     # get args
     args = get_args()
     if not args['output'].endswith('.mzML'):
