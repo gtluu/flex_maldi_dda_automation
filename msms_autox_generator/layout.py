@@ -1247,7 +1247,6 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox):
         [
             html.Div(
                 [
-                    # TODO: should have grayed out theme for spots that were not found in the .run file
                     dash_table.DataTable(
                         plate_map_df.to_dict('records'),
                         columns=[{'name': str(col), 'id': str(col)} for col in plate_map_df.columns],
