@@ -116,6 +116,10 @@ def get_plate_map(plate_format):
     return pd.DataFrame(data, index=rows, columns=columns)
 
 
+def get_plate_map_legend():
+    return pd.read_csv(os.path.join(os.path.dirname(__file__), 'etc', 'plate_map_legend.csv'))
+
+
 def blank_figure():
     """
     Obtain a blank figure wrapped by plotly_resampler.FigureResampler to be used as a placeholder.

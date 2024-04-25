@@ -1241,16 +1241,16 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, outdir):
         for the resulting AutoXecute data.
     :return: Div containing the main dashboard layout.
     """
-    df = get_plate_map(plate_format)
+    plate_map_df = get_plate_map(plate_format)
+    plate_map_legend_df = get_plate_map_legend()
     return html.Div(
         [
             html.Div(
-                # TODO: add legend for blank
                 [
                     # TODO: should have grayed out theme for spots that were not found in the .run file
                     dash_table.DataTable(
-                        df.to_dict('records'),
-                        columns=[{'name': str(col), 'id': str(col)} for col in df.columns],
+                        plate_map_df.to_dict('records'),
+                        columns=[{'name': str(col), 'id': str(col)} for col in plate_map_df.columns],
                         id='plate_map',
                         style_header={'display': 'none',
                                       'textAlign': 'center'},
@@ -1259,6 +1259,18 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, outdir):
                             {'if': {'state': 'selected'},
                              'backgroundColor': 'inherit !important'}
                         ]
+                    ),
+                    dash_table.DataTable(
+                        plate_map_legend_df.to_dict('records'),
+                        columns=[{'name': str(col), 'id': str(col)} for col in plate_map_legend_df.columns],
+                        id='plate_map_legend',
+                        style_header={'display': 'none',
+                                      'textAlign': 'center'},
+                        style_cell={'textAlign': 'center'},
+                        style_data_conditional=[{'if': {'column_id': 'Blank'},
+                                                 'backgroundColor': 'green', 'color': 'white'},
+                                                {'if': {'column_id': 'Empty'},
+                                                 'backgroundColor': 'gray', 'color': 'white'}]
                     ),
                     html.Div(
                         [
