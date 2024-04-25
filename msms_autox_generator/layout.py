@@ -1229,7 +1229,7 @@ def get_preview_layout():
     ]
 
 
-def get_dashboard_layout(param_dict, plate_format, autox_path_dict, outdir):
+def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox):
     """
     Obtain the main dashboard layout.
 
@@ -1237,10 +1237,10 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, outdir):
     :param plate_format: Plate geometry used to generate the plate map table.
     :param autox_path_dict: Nested dictionary containing spot group sample names, data paths, and method paths from the
         .run file.
-    :param outdir: Path to folder in which to write the output AutoXecute sequence. Will also be used as the directory
-        for the resulting AutoXecute data.
+    :param autox: AutoXecute sequence file loaded as an XML tree.
     :return: Div containing the main dashboard layout.
     """
+    outdir = autox.attrib['directory']
     plate_map_df = get_plate_map(plate_format)
     plate_map_legend_df = get_plate_map_legend()
     return html.Div(
@@ -1255,10 +1255,7 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, outdir):
                         style_header={'display': 'none',
                                       'textAlign': 'center'},
                         style_cell={'textAlign': 'center'},
-                        style_data_conditional=[
-                            {'if': {'state': 'selected'},
-                             'backgroundColor': 'inherit !important'}
-                        ]
+                        style_data_conditional=get_plate_map_style(plate_map_df, autox)
                     ),
                     dash_table.DataTable(
                         plate_map_legend_df.to_dict('records'),

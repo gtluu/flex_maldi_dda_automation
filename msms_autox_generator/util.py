@@ -116,6 +116,21 @@ def get_plate_map(plate_format):
     return pd.DataFrame(data, index=rows, columns=columns)
 
 
+def get_plate_map_style(df, autox):
+    style_dicts = [{'if': {'state': 'selected'},
+                    'backgroundColor': 'inherit !important'}]
+    plate_coords = [coord for coords in df.values.tolist() for coord in coords]
+    autox_coords = [cont.attrib['Pos_on_Scout'] for spot_group in autox for cont in spot_group]
+    for coord in plate_coords:
+        if coord not in autox_coords:
+            row, col = np.where(df.values == coord)
+            row = int(row)
+            col = str(int(col) + 1)
+            style_dicts.append({'if': {'row_index': row, 'column_id': col},
+                                'backgroundColor': 'gray', 'color': 'white'})
+    return style_dicts
+
+
 def get_plate_map_legend():
     return pd.read_csv(os.path.join(os.path.dirname(__file__), 'etc', 'plate_map_legend.csv'))
 

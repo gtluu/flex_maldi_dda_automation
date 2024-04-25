@@ -59,7 +59,7 @@ BLANK_SPOTS = []
 app = DashProxy(prevent_initial_callbacks=True,
                 transforms=[MultiplexerTransform(), ServersideOutputTransform()],
                 external_stylesheets=[dbc.themes.BOOTSTRAP])
-app.layout = get_dashboard_layout(PREPROCESSING_PARAMS, PLATE_FORMAT, AUTOX_PATH_DICT, MS1_AUTOX.attrib['directory'])
+app.layout = get_dashboard_layout(PREPROCESSING_PARAMS, PLATE_FORMAT, AUTOX_PATH_DICT, MS1_AUTOX)
 
 
 @app.callback([Output({'type': 'raw_data_path_input', 'index': MATCH}, 'value'),
@@ -163,8 +163,14 @@ def mark_spots_as_blank(n_clicks, spots, cell_style, data):
     :return: Style data with the updated blank spot style for the selected cells appended.
     """
     global BLANK_SPOTS
+    gray_indices = [(style_dict['if']['row_index'], style_dict['if']['column_id'])
+                    for style_dict in cell_style
+                    if 'if' in style_dict.keys() and 'backgroundColor' in style_dict.keys()
+                    if style_dict['backgroundColor'] == 'gray'
+                    if 'row_index' in style_dict['if'].keys() and 'column_id' in style_dict['if'].keys()]
     indices = [(i['row'], i['column_id']) for i in spots]
-    BLANK_SPOTS = BLANK_SPOTS + [data[i['row']][i['column_id']] for i in spots]
+    indices = [i for i in indices if i not in gray_indices]
+    BLANK_SPOTS = BLANK_SPOTS + [data[i[0]][i[1]] for i in indices if data[i[0]][i[1]] not in BLANK_SPOTS]
     return cell_style + [{'if': {'row_index': row, 'column_id': col},
                           'backgroundColor': 'green', 'color': 'white'}
                          for row, col in indices]
@@ -186,10 +192,7 @@ def clear_blank_spots(n_clicks):
         BLANK_SPOTS = []
         for key, spectrum in INDEXED_DATA.items():
             spectrum.undo_all_processing()
-        return [
-            {'if': {'state': 'selected'},
-             'backgroundColor': 'inherit !important'}
-        ]
+        return get_plate_map_style(get_plate_map(PLATE_FORMAT), MS1_AUTOX)
 
 
 @ app.callback([Output('exclusion_list', 'data'),
