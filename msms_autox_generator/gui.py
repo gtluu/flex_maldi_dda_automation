@@ -79,10 +79,7 @@ def update_raw_data_path(n_clicks, button_id):
     :return: Tuple of the updated Bruker .d directory path, whether the path is valid, and whether the path is invalid.
     """
     global AUTOX_PATH_DICT
-    main_tk_window = tkinter.Tk()
-    main_tk_window.attributes('-topmost', True, '-alpha', 0)
-    dirname = askdirectory(mustexist=True)
-    main_tk_window.destroy()
+    dirname = get_path_name()
     if (dirname.endswith('.d') and
             os.path.exists(dirname) and
             os.path.splitext(os.path.split(dirname)[-1])[0] == AUTOX_PATH_DICT[button_id['index']]['sample_name']):
@@ -106,10 +103,7 @@ def update_method_path(n_clicks, button_id):
     :return: Tuple of the updated Bruker .m directory path, whether the path is valid, and whether the path is invalid.
     """
     global AUTOX_PATH_DICT
-    main_tk_window = tkinter.Tk()
-    main_tk_window.attributes('-topmost', True, '-alpha', 0)
-    dirname = askdirectory(mustexist=True)
-    main_tk_window.destroy()
+    dirname = get_path_name()
     if dirname.endswith('.m') and os.path.exists(dirname):
         AUTOX_PATH_DICT[button_id['index']]['method_path'] = dirname
         return dirname, True, False
@@ -1218,10 +1212,7 @@ def select_new_output_directory(n_clicks):
     """
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'run_select_output_directory.n_clicks':
-        main_tk_window = tkinter.Tk()
-        main_tk_window.attributes('-topmost', True, '-alpha', 0)
-        dirname = askdirectory(mustexist=True)
-        main_tk_window.destroy()
+        dirname = get_path_name()
         if os.path.exists(dirname):
             return dirname, True, False
         else:
@@ -1242,10 +1233,7 @@ def select_new_method_(n_clicks):
     """
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'run_select_method.n_clicks':
-        main_tk_window = tkinter.Tk()
-        main_tk_window.attributes('-topmost', True, '-alpha', 0)
-        dirname = askdirectory(mustexist=True)
-        main_tk_window.destroy()
+        dirname = get_path_name()
         if dirname.endswith('.m') and os.path.exists(dirname):
             return dirname, True, False
         else:

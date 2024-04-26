@@ -11,6 +11,34 @@ from plotly_resampler import FigureResampler
 from msms_autox_generator.tmpdir import FILE_SYSTEM_BACKEND
 
 
+def get_autox_sequence_filename():
+    """
+    Create GUI file selection window to allow the user to select the AutoXecute sequence file (*.run file).
+
+    :return: AutoXecute sequence filename.
+    :rtype: str
+    """
+    main_tk_window = tkinter.Tk()
+    main_tk_window.attributes('-topmost', True, '-alpha', 0)
+    autox_filename = askopenfilename(filetypes=[('AutoXecute Sequence', '*.run')])
+    main_tk_window.destroy()
+    return autox_filename
+
+
+def get_path_name():
+    """
+    Create GUI directory selection window to allow the user to select a directory path.
+
+    :return: Directory path name.
+    :rtype: str
+    """
+    main_tk_window = tkinter.Tk()
+    main_tk_window.attributes('-topmost', True, '-alpha', 0)
+    dirname = askdirectory(mustexist=True)
+    main_tk_window.destroy()
+    return dirname
+
+
 def get_geometry_files(geometry_path):
     """
     Obtain the list of MALDI plate geometries to be selected from.
@@ -42,20 +70,6 @@ def get_geometry_files(geometry_path):
     geometry_files_subset = {os.path.splitext(os.path.split(i)[-1])[0]: i for i in geometry_files_subset}
 
     return geometry_files_subset
-
-
-def get_autox_sequence_filename():
-    """
-    Create GUI file selection window to allow the user to select the AutoXecute sequence file (*.run file).
-
-    :return: AutoXecute sequence filename.
-    :rtype: str
-    """
-    main_tk_window = tkinter.Tk()
-    main_tk_window.attributes('-topmost', True, '-alpha', 0)
-    autox_filename = askopenfilename(filetypes=[('AutoXecute Sequence', '*.run')])
-    main_tk_window.destroy()
-    return autox_filename
 
 
 def get_geometry_format(autox):
