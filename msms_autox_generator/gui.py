@@ -1,3 +1,4 @@
+import toml
 from lxml import etree as et
 from pymaldiproc.data_import import import_timstof_raw_data
 from pymaldiproc.preprocessing import get_feature_matrix
@@ -9,7 +10,6 @@ from dash import State, callback_context, no_update, MATCH, ALL
 from dash_extensions.enrich import (Input, Output, DashProxy, MultiplexerTransform, Serverside,
                                     ServersideOutputTransform, FileSystemBackend)
 import dash_bootstrap_components as dbc
-import plotly.express as px
 from plotly_resampler import FigureResampler
 
 # default processing parameters from config file
@@ -35,6 +35,9 @@ PREPROCESSING_PARAMS['ALIGN_SPECTRA'] = {'run': False,
 PREPROCESSING_PARAMS['PRECURSOR_SELECTION'] = {'top_n': 10,
                                                'use_exclusion_list': True,
                                                'exclusion_list_tolerance': 0.05}
+# Copies of PREPROCESSING_PARAMS for logging
+BLANK_PARAMS_LOG = {}
+SAMPLE_PARAMS_LOG = {}
 
 # get AutoXecute sequence path
 AUTOX_SEQ = get_autox_sequence_filename()
@@ -50,7 +53,6 @@ AUTOX_PATH_DICT = {index: {'sample_name': spot_group.attrib['sampleName'],
                    for index, spot_group in enumerate(MS1_AUTOX)}
 
 INDEXED_DATA = {}
-
 BLANK_SPOTS = []
 
 app = DashProxy(prevent_initial_callbacks=True,
@@ -203,10 +205,12 @@ def generate_exclusion_list_from_blank_spots(n_clicks):
     global INDEXED_DATA
     global BLANK_SPOTS
     global PREPROCESSING_PARAMS
+    global BLANK_PARAMS_LOG
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'generate_exclusion_list_from_blank_spots.n_clicks':
         blank_spectra = [INDEXED_DATA[spot] for spot in BLANK_SPOTS]
         params = copy.deepcopy(PREPROCESSING_PARAMS)
+        BLANK_PARAMS_LOG = copy.deepcopy(PREPROCESSING_PARAMS)
         # preprocessing
         if params['TRIM_SPECTRUM']['run']:
             del params['TRIM_SPECTRUM']['run']
@@ -1006,9 +1010,11 @@ def preview_precursor_list(n_clicks_preview,
     global INDEXED_DATA
     global PREPROCESSING_PARAMS
     global BLANK_SPOTS
+    global SAMPLE_PARAMS_LOG
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'preview_precursor_list.n_clicks':
         params = copy.deepcopy(PREPROCESSING_PARAMS)
+        SAMPLE_PARAMS_LOG = copy.deepcopy(PREPROCESSING_PARAMS)
         # preprocessing
         if params['TRIM_SPECTRUM']['run']:
             del params['TRIM_SPECTRUM']['run']
@@ -1099,8 +1105,10 @@ def update_preview_spectrum(value):
                State('run_success_modal', 'is_open'),
                State('run_output_directory_value', 'value'),
                State('run_method_value', 'value'),
-               State('run_method_checkbox', 'value')])
-def toggle_run_modal(preview_run_n_clicks, run_n_clicks, run_is_open, success_is_open, outdir, method, method_checkbox):
+               State('run_method_checkbox', 'value'),
+               State('exclusion_list', 'data')])
+def toggle_run_modal(preview_run_n_clicks, run_n_clicks, run_is_open, success_is_open, outdir, method, method_checkbox,
+                     exclusion_list):
     """
     Dash callback to toggle the run_modal modal window and create the new MS/MS AutoXecute sequence. A new modal window
     displaying a success message and the output directory of the resulting AutoXecute sequence will be shown upon
@@ -1115,6 +1123,7 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, run_is_open, success_is
     :param method: Path to the new Bruker .m directory to be used in the AutoXecute sequence.
     :param method_checkbox: Whether to use user specified Bruker .m directory method file or to use the original
         methods in the new AutoXecute sequence.
+    :param exclusion_list: State signal to provide the current exclusion list data.
     :return: Tuple of output signal to determine whether the run_modal modal window is open and output signal to
         determine whether the run_modal_success modal window is open.
     """
@@ -1127,19 +1136,29 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, run_is_open, success_is
         global INDEXED_DATA
         global BLANK_SPOTS
         global AUTOX_SEQ
+        global BLANK_PARAMS_LOG
+        global SAMPLE_PARAMS_LOG
+        log = 'fleX MS/MS AutoXecute Generator Log\n\n'
+        log += f'Output Directory: {outdir}\n\n'
         new_autox = et.Element(MS1_AUTOX.tag, attrib=MS1_AUTOX.attrib)
         new_autox.attrib['directory'] = outdir
         for spot_group in MS1_AUTOX:
+            log += f"Spot Group: {spot_group.attrib['sampleName']}\n"
             for cont in spot_group:
                 if cont.attrib['Pos_on_Scout'] not in BLANK_SPOTS:
                     new_spot_group = et.SubElement(new_autox, spot_group.tag, attrib=spot_group.attrib)
                     new_spot_group.attrib['sampleName'] = f"{new_spot_group.attrib['sampleName']}_{cont.attrib['Pos_on_Scout']}_MSMS"
                     if method_checkbox and os.path.exists(method):
                         new_spot_group.attrib['acqMethod'] = method
+                        log += f"{spot_group.attrib['sampleName']} Method: {method}\n"
                     else:
                         new_spot_group.attrib['acqMethod'] = [value['method_path']
                                                               for key, value in AUTOX_PATH_DICT.items()
                                                               if value['sample_name'] == spot_group.attrib['sampleName']][0]
+                        log += (f"{spot_group.attrib['sampleName']} Method: " +
+                                [value['method_path']
+                                 for key, value in AUTOX_PATH_DICT.items()
+                                 if value['sample_name'] == spot_group.attrib['sampleName']][0] + '\n')
                     top_n_peaks = pd.DataFrame({'m/z': INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_mz_array,
                                                 'Intensity': INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_intensity_array})
                     top_n_peaks = top_n_peaks.sort_values(by='Intensity', ascending=False).round(4)
@@ -1154,6 +1173,17 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, run_is_open, success_is
                              encoding='utf-8',
                              xml_declaration=True,
                              pretty_print=True)
+        log += '\nSample Processing Parameters Used for Precursor Selection\n\n'
+        log += toml.dumps(SAMPLE_PARAMS_LOG) + '\n\n'
+        if 'PRECURSOR_SELECTION' in SAMPLE_PARAMS_LOG.keys():
+            if SAMPLE_PARAMS_LOG['PRECURSOR_SELECTION']['use_exclusion_list']:
+                log += 'Blank Processing Parameters Used for Exclusion List Generation\n\n'
+                log += toml.dumps(BLANK_PARAMS_LOG) + '\n\n'
+                log += 'Exclusion List\n\n'
+                log += pd.DataFrame(exclusion_list).to_string(index=False) + '\n'
+        with open(os.path.join(outdir,
+                               os.path.splitext(os.path.split(AUTOX_SEQ)[-1])[0]) + '_MALDI_DDA.log', 'w') as logfile:
+            logfile.write(log)
         return not run_is_open, not success_is_open
     return run_is_open, success_is_open
 

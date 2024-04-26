@@ -71,5 +71,6 @@ pyinstaller==6.5.0
 pyinstaller-hooks-contrib==2024.3
 pywin32-ctypes==0.2.2
 pyopenms==3.1.0
+toml==0.10.2
 git+https://github.com/mars20/icoshift.git
 git+https://github.com/gtluu/pyTDFSDK.git@v0.3.7

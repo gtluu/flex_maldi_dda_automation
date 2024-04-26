@@ -8,6 +8,7 @@ import pandas as pd
 from lxml import etree as et
 from contextlib import redirect_stdout
 from io import StringIO
+import toml
 
 import plotly.express as px
 from plotly_resampler import FigureResampler
@@ -34,4 +35,4 @@ from msms_autox_generator.layout import *
 from msms_autox_generator.util import *
 from msms_autox_generator.run import *
 
-VERSION = '0.4.0b2'
+VERSION = '0.4.0b3'
