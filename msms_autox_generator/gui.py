@@ -1,16 +1,11 @@
-import os
-import gc
-import copy
-import configparser
-import pandas as pd
 from lxml import etree as et
-from pymaldiproc.data_import import import_mzml, import_timstof_raw_data
-from pymaldiproc.preprocessing import align_spectra, get_feature_matrix
+from pymaldiproc.data_import import import_timstof_raw_data
+from pymaldiproc.preprocessing import get_feature_matrix
 from pymaldiviz.util import *
 from msms_autox_generator.layout import *
 from msms_autox_generator.util import *
 from msms_autox_generator.tmpdir import FILE_SYSTEM_BACKEND
-from dash import State, callback_context, no_update, dash_table, MATCH, ALL
+from dash import State, callback_context, no_update, MATCH, ALL
 from dash_extensions.enrich import (Input, Output, DashProxy, MultiplexerTransform, Serverside,
                                     ServersideOutputTransform, FileSystemBackend)
 import dash_bootstrap_components as dbc

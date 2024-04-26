@@ -1,8 +1,3 @@
-import copy
-import numpy as np
-import pandas as pd
-import plotly.express as px
-from plotly_resampler import FigureResampler
 from dash import dcc, html, dash_table
 import dash_bootstrap_components as dbc
 from msms_autox_generator.util import *

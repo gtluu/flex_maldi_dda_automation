@@ -4,7 +4,7 @@ import configparser
 import numpy as np
 import pandas as pd
 import tkinter
-from tkinter.filedialog import askopenfilename, askdirectory, asksaveasfilename
+from tkinter.filedialog import askopenfilename, askdirectory
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly_resampler import FigureResampler
