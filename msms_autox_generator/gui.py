@@ -299,7 +299,7 @@ def update_blank_spectrum(value):
     """
     global INDEXED_DATA
     fig = get_spectrum(INDEXED_DATA[value])
-    #cleanup_file_system_backend()
+    cleanup_file_system_backend()
     return fig, Serverside(fig)
 
 
@@ -1098,7 +1098,7 @@ def update_preview_spectrum(value):
     """
     global INDEXED_DATA
     fig = get_spectrum(INDEXED_DATA[value])
-    #cleanup_file_system_backend()
+    cleanup_file_system_backend()
     return fig, Serverside(fig)
 
 
