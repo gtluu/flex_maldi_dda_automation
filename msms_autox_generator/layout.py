@@ -1138,6 +1138,7 @@ def get_exclusion_list_layout():
             data=[],
             columns=[{'name': 'm/z', 'id': 'm/z'}],
             id='exclusion_list',
+            row_deletable=True,
             style_header={'textAlign': 'center'},
             style_cell={'textAlign': 'center'},
             style_data_conditional=[],
@@ -1199,7 +1200,6 @@ def get_exclusion_list_spectra_layout():
     ]
 
 
-# TODO: replace dropdown with plate map
 def get_preview_layout():
     """
     Obtain the layout for the sample spectra preview modal window body.
