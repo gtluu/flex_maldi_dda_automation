@@ -38,20 +38,19 @@
 droplet MS datasets in a data dependent fashion on the Bruker timsTOF fleX using timsControl. Full scan MS data is
 first acquired using standard data acquisition protocols using automation through AutoXecute. Data is the processed
 through fleX MS/MS AutoXecute Generator to generate an MS/MS AutoXecute sequence.</p>
-</section>
 <section id="installation">
-<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h1>
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h2>
 <p>This workflow should be installed and run on the computer used for data acquisition as the resulting AutoXecute
 sequence relies on local file paths.</p>
 <section id="gui">
-<h2>GUI<a class="headerlink" href="#gui" title="Link to this heading">¶</a></h2>
+<h3>GUI<a class="headerlink" href="#gui" title="Link to this heading">¶</a></h3>
 <p>The recommended method to run this workflow is via the GUI. To do so, download from _____, unzip the folder, and run
 <code class="docutils literal notranslate"><span class="pre">msms_autox_generator.exe</span></code> to start the program. No other installation is required.</p>
 <p>Alternatively, the GUI can be started from the command line, which will require a Python/conda virtual environment that
 can be installed by following the command line installation instructions below.</p>
 </section>
 <section id="installing-on-windows">
-<h2>Installing on Windows<a class="headerlink" href="#installing-on-windows" title="Link to this heading">¶</a></h2>
+<h3>Installing on Windows<a class="headerlink" href="#installing-on-windows" title="Link to this heading">¶</a></h3>
 <ol class="arabic">
 <li><p>Download and install <a class="reference external" href="https://repo.anaconda.com/archive/Anaconda3-2023.07-2-Windows-x86_64.exe">Anaconda for Windows</a> if not already installed. Follow the prompts to complete installation.</p></li>
 <li><p>Download and install <a class="reference external" href="https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.2/Git-2.42.0.2-64-bit.exe">Git for Windows</a> if not already installed.</p></li>
@@ -93,7 +92,7 @@ can be installed by following the command line installation instructions below.<
 </ol>
 </section>
 <section id="installing-on-linux">
-<h2>Installing on Linux<a class="headerlink" href="#installing-on-linux" title="Link to this heading">¶</a></h2>
+<h3>Installing on Linux<a class="headerlink" href="#installing-on-linux" title="Link to this heading">¶</a></h3>
 <ol class="arabic">
 <li><p>If not already installed, download and install <a class="reference external" href="https://repo.anaconda.com/archive/Anaconda3-2023.07-2-Linux-x86_64.sh">Anaconda for Linux</a>. Anaconda3-2023.07-2 for Linux is used as an example here.</p>
 <ul class="simple">
@@ -151,7 +150,7 @@ can be installed by following the command line installation instructions below.<
 </section>
 </section>
 <section id="usage">
-<h1>Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h1>
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h2>
 <p>When starting fleX MS/MS AutoXecute Generator, a file selection dialogue window will appear in which an AutoXecute
 sequence can be loaded.</p>
 <img alt="AutoXecute Sequence File Selection Dialogue Window" src="_images/msms_autox_generator_01.png" />
@@ -165,7 +164,7 @@ shown.</p>
 <img alt="Raw Data and Method Path Validation Window" src="_images/msms_autox_generator_03.png" />
 <img alt="fleX MS/MS AutoXecute Generator Main Window" src="_images/msms_autox_generator_04.png" />
 <section id="maldi-plate-map">
-<h2>MALDI Plate Map<a class="headerlink" href="#maldi-plate-map" title="Link to this heading">¶</a></h2>
+<h3>MALDI Plate Map<a class="headerlink" href="#maldi-plate-map" title="Link to this heading">¶</a></h3>
 <p>At the top of the main window, a plate map is shown based on the plate geometry that was used in the AutoXecute
 sequence that was loaded. Note that ony standard microplate format plate geometries are valid in this tool. Below the
 plate map, a legend is found for the plate map and buttons to mark a spot as a blank/control spot or to clear the spots
@@ -173,7 +172,7 @@ currently marked as a blank/control. Sample spots are colored white in the plate
 containing no data are colored gray.</p>
 </section>
 <section id="exclusion-list">
-<h2>Exclusion List<a class="headerlink" href="#exclusion-list" title="Link to this heading">¶</a></h2>
+<h3>Exclusion List<a class="headerlink" href="#exclusion-list" title="Link to this heading">¶</a></h3>
 <p>An exclusion list can be used to exclude features that are not of interest (i.e. known MALDI matrix peaks, features
 found in control samples, etc.) from the final precursor lists for each spot during precursor selection. Two options
 are provided to populate the exclusion list: 1) generating a list from the blank/control spots as marked on the plate
@@ -211,7 +210,7 @@ existing exclusion list that has been generated/uploaded.</p>
 <img alt="Exclusion List File Selection Dialogue Window" src="_images/msms_autox_generator_11.png" />
 </section>
 <section id="generating-an-ms-ms-autoxecute-sequence">
-<h2>Generating an MS/MS AutoXecute Sequence<a class="headerlink" href="#generating-an-ms-ms-autoxecute-sequence" title="Link to this heading">¶</a></h2>
+<h3>Generating an MS/MS AutoXecute Sequence<a class="headerlink" href="#generating-an-ms-ms-autoxecute-sequence" title="Link to this heading">¶</a></h3>
 <p>Processing parameters can be modified to differ from those used during exclusion list generation (if performed) by
 going back to the edit preprocessing parameters window. This window also includes precursor selection parameters,
 including how many precursors to select, whether to use the exclusion list, and the Da tolerance to use when comparing
@@ -239,6 +238,7 @@ once the file has been successfully saved.</p>
 AutoXecute sequence using the <code class="docutils literal notranslate"><span class="pre">Validate</span></code> button above the sample list in timsControl.</p>
 </section>
 </section>
+</section>
 
 
           </div>
@@ -260,27 +260,13 @@ AutoXecute sequence using the <code class="docutils literal notranslate"><span c
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ms1_autox_generator.html">About</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ms1_autox_generator.html#installation">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ms1_autox_generator.html#usage">Usage</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">About</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#installation">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#gui">GUI</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#installing-on-windows">Installing on Windows</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#installing-on-linux">Installing on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ms1_autox_generator.html">fleX MS1 AutoXecute Generator</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">fleX MS/MS AutoXecute Generator</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="#usage">Usage</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#maldi-plate-map">MALDI Plate Map</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#exclusion-list">Exclusion List</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#generating-an-ms-ms-autoxecute-sequence">Generating an MS/MS AutoXecute Sequence</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="maldi_polymerization.html">About</a></li>
-<li class="toctree-l1"><a class="reference internal" href="maldi_polymerization.html#installation">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="maldi_polymerization.html#usage">Usage</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source.html">Source Code</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="maldi_polymerization.html">MALDI Polymerization</a></li>
 </ul>
 
 <div class="relations">

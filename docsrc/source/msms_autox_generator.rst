@@ -6,12 +6,12 @@ first acquired using standard data acquisition protocols using automation throug
 through fleX MS/MS AutoXecute Generator to generate an MS/MS AutoXecute sequence.
 
 Installation
-============
+------------
 This workflow should be installed and run on the computer used for data acquisition as the resulting AutoXecute
 sequence relies on local file paths.
 
 GUI
----
+^^^
 The recommended method to run this workflow is via the GUI. To do so, download from _____, unzip the folder, and run
 ``msms_autox_generator.exe`` to start the program. No other installation is required.
 
@@ -19,7 +19,7 @@ Alternatively, the GUI can be started from the command line, which will require 
 can be installed by following the command line installation instructions below.
 
 Installing on Windows
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 1. Download and install `Anaconda for Windows <https://repo.anaconda.com/archive/Anaconda3-2023.07-2-Windows-x86_64.exe>`_ if not already installed. Follow the prompts to complete installation.
 
 2. Download and install `Git for Windows <https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.2/Git-2.42.0.2-64-bit.exe>`_ if not already installed.
@@ -63,7 +63,7 @@ Installing on Windows
         msms_autox_generator
 
 Installing on Linux
--------------------
+^^^^^^^^^^^^^^^^^^^
 1. If not already installed, download and install `Anaconda for Linux <https://repo.anaconda.com/archive/Anaconda3-2023.07-2-Linux-x86_64.sh>`_. Anaconda3-2023.07-2 for Linux is used as an example here.
 
    * Alternatively, the script can be downloaded in the ``Terminal`` using the following command.
@@ -121,7 +121,7 @@ Installing on Linux
         msms_autox_generator
 
 Usage
-=====
+-----
 When starting fleX MS/MS AutoXecute Generator, a file selection dialogue window will appear in which an AutoXecute
 sequence can be loaded.
 
@@ -146,7 +146,7 @@ shown.
    :alt: fleX MS/MS AutoXecute Generator Main Window
 
 MALDI Plate Map
----------------
+^^^^^^^^^^^^^^^
 At the top of the main window, a plate map is shown based on the plate geometry that was used in the AutoXecute
 sequence that was loaded. Note that ony standard microplate format plate geometries are valid in this tool. Below the
 plate map, a legend is found for the plate map and buttons to mark a spot as a blank/control spot or to clear the spots
@@ -154,7 +154,7 @@ currently marked as a blank/control. Sample spots are colored white in the plate
 containing no data are colored gray.
 
 Exclusion List
---------------
+^^^^^^^^^^^^^^
 An exclusion list can be used to exclude features that are not of interest (i.e. known MALDI matrix peaks, features
 found in control samples, etc.) from the final precursor lists for each spot during precursor selection. Two options
 are provided to populate the exclusion list: 1) generating a list from the blank/control spots as marked on the plate
@@ -214,7 +214,7 @@ existing exclusion list that has been generated/uploaded.
    :alt: Exclusion List File Selection Dialogue Window
 
 Generating an MS/MS AutoXecute Sequence
----------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Processing parameters can be modified to differ from those used during exclusion list generation (if performed) by
 going back to the edit preprocessing parameters window. This window also includes precursor selection parameters,
 including how many precursors to select, whether to use the exclusion list, and the Da tolerance to use when comparing

@@ -13,7 +13,6 @@
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="flex_maldi_dda_automation" href="source.html" />
     <link rel="prev" title="About" href="msms_autox_generator.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
@@ -37,11 +36,10 @@
 <p>This workflow uses a modified version of <a class="reference external" href="https://github.com/gtluu/timsconvert">TIMSCONVERT</a> to take multiple raw
 MALDI-qTOF Dried Droplet MS datasets from the Bruker timsTOF fleX from successive AutoXecute runs with different,
 non-overlapping mass range windows and combines them into a single consensus spectrum with the “full” mass range.</p>
-</section>
 <section id="installation">
-<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h1>
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h2>
 <section id="installing-on-windows">
-<h2>Installing on Windows<a class="headerlink" href="#installing-on-windows" title="Link to this heading">¶</a></h2>
+<h3>Installing on Windows<a class="headerlink" href="#installing-on-windows" title="Link to this heading">¶</a></h3>
 <ol class="arabic">
 <li><p>Download and install <a class="reference external" href="https://repo.anaconda.com/archive/Anaconda3-2023.07-2-Windows-x86_64.exe">Anaconda for Windows</a> if not already installed. Follow the prompts to complete installation.</p></li>
 <li><p>Download and install <a class="reference external" href="https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.2/Git-2.42.0.2-64-bit.exe">Git for Windows</a> if not already installed.</p></li>
@@ -66,7 +64,7 @@ non-overlapping mass range windows and combines them into a single consensus spe
 </ol>
 </section>
 <section id="installing-on-linux">
-<h2>Installing on Linux<a class="headerlink" href="#installing-on-linux" title="Link to this heading">¶</a></h2>
+<h3>Installing on Linux<a class="headerlink" href="#installing-on-linux" title="Link to this heading">¶</a></h3>
 <ol class="arabic">
 <li><p>If not already installed, download and install <a class="reference external" href="https://repo.anaconda.com/archive/Anaconda3-2023.07-2-Linux-x86_64.sh">Anaconda for Linux</a>. Anaconda3-2023.07-2 for Linux is used as an example here.</p>
 <ul class="simple">
@@ -107,10 +105,10 @@ non-overlapping mass range windows and combines them into a single consensus spe
 </section>
 </section>
 <section id="usage">
-<h1>Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h1>
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h2>
 <p>This workflow is run from the command line.</p>
 <section id="parameters">
-<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading">¶</a></h2>
+<h3>Parameters<a class="headerlink" href="#parameters" title="Link to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">--input</span></code>: One or more MALDI-MS .d directories acquired from the timsTOF fleX in successive AutoXecute runs with
 different, non-overlapping mass range windows.</p>
 <p><code class="docutils literal notranslate"><span class="pre">--output</span></code>: Name of the resulting mzML file.</p>
@@ -121,12 +119,13 @@ different, non-overlapping mass range windows.</p>
 descriptive CV terms.</p>
 </section>
 <section id="example">
-<h2>Example<a class="headerlink" href="#example" title="Link to this heading">¶</a></h2>
+<h3>Example<a class="headerlink" href="#example" title="Link to this heading">¶</a></h3>
 <blockquote>
 <div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">maldi_polymerization</span><span class="o">/</span><span class="n">maldi_polymerization</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="nb">input</span> <span class="n">strain1_mr1</span><span class="o">.</span><span class="n">d</span> <span class="n">strain1_mr2</span><span class="o">.</span><span class="n">d</span> <span class="n">strain1_mr3</span><span class="o">.</span><span class="n">d</span> <span class="o">--</span><span class="n">output</span> <span class="n">test</span><span class="o">.</span><span class="n">mzML</span>
 </pre></div>
 </div>
 </div></blockquote>
+</section>
 </section>
 </section>
 
@@ -150,25 +149,13 @@ descriptive CV terms.</p>
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ms1_autox_generator.html">About</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ms1_autox_generator.html#installation">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ms1_autox_generator.html#usage">Usage</a></li>
-<li class="toctree-l1"><a class="reference internal" href="msms_autox_generator.html">About</a></li>
-<li class="toctree-l1"><a class="reference internal" href="msms_autox_generator.html#installation">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="msms_autox_generator.html#usage">Usage</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">About</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#installation">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#installing-on-windows">Installing on Windows</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#installing-on-linux">Installing on Linux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ms1_autox_generator.html">fleX MS1 AutoXecute Generator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="msms_autox_generator.html">fleX MS/MS AutoXecute Generator</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">MALDI Polymerization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="#usage">Usage</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#example">Example</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="source.html">Source Code</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
 </ul>
 
 <div class="relations">
@@ -176,7 +163,6 @@ descriptive CV terms.</p>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
       <li>Previous: <a href="msms_autox_generator.html" title="previous chapter">About</a></li>
-      <li>Next: <a href="source.html" title="next chapter">flex_maldi_dda_automation</a></li>
   </ul></li>
 </ul>
 </div>

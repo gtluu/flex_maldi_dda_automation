@@ -6,12 +6,12 @@ can acquire data on a full 384 spot plate using a method tuned for lower mass ra
 for higher mass ranges, all in a single automated run.
 
 Installation
-============
+------------
 Download from _____, unzip the folder, and run "ms1_autox_generator.exe" to start the program. No other installation
 is required.
 
 Usage
-=====
+-----
 Please note that this tool works best when run on the timsTOF fleX acquisition computer.
 
 Once loaded, the main window will be shown, and users will need to load a MALDI plate map, the desired timsControl
@@ -21,7 +21,7 @@ acquisition methods to be used, and the MALDI plate geometry being used.
    :alt: fleX MS1 AutoXecute Generator Main Window
 
 MALDI Plate Map
----------------
+^^^^^^^^^^^^^^^
 A CSV plate map can be selected with sample names can be selected by clicking the ``Browse`` button under
 ``MALDI Plate Map``, which will create a file selection dialogue window to select a CSV file. This will create
 ``Spot Groups`` for each sample name in the plate map. For example, if A1, A2, and A3 are named ``strain1``, this will
@@ -32,7 +32,7 @@ and 6144 format plates are provided.
    :alt: MALDI Plate Map File Selection Dialogue Window
 
 Methods
--------
+^^^^^^^
 Similarly, methods can be selected by clicking the ``Load Method(s)`` button, which will open a directory selection
 dialogue window to select a method. If a directory that does not end in ``.m`` is selected, all Bruker timsControl
 ``.m`` methods within that directory and any subdirectories will be selected and added to the table below.
@@ -51,7 +51,7 @@ the ``strain1`` ``Spot Group`` will be split into 4 ``Spot Groups`` named ``stra
 ``strain1_liloandstitch_mr1``, ``strain1_liloandstitch_mr2``, and ``strain1_liloandstitch_mr3``.
 
 MALDI Plate Geometry
---------------------
+^^^^^^^^^^^^^^^^^^^^
 Lastly, the appropriate ``MALDI Plate Geometry`` can be selected from the dropdown menu. Note that only plate
 geometries using standard microplate formats can be selected.
 
@@ -66,13 +66,13 @@ be modified by going to ``Settings`` > ``Edit Path to "GeometryFiles" Directory`
    :alt: Edit Path to GeometryFiles
 
 Bruker timsControl Version
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 This program will also attempt to detect the current version of Bruker timsControl that is installed. However, if no
 installation of timsControl is found, it will default to using hte version of timsControl distributed with Compass
 2024b SR1.
 
 Run
----
+^^^
 Once all parameters have been loaded, click on ``Generate AutoXecute Sequence`` to open a dialogue window and select
 where to save the AutoXecute sequence.
 

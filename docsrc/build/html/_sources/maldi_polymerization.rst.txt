@@ -5,10 +5,10 @@ MALDI-qTOF Dried Droplet MS datasets from the Bruker timsTOF fleX from successiv
 non-overlapping mass range windows and combines them into a single consensus spectrum with the "full" mass range.
 
 Installation
-============
+------------
 
 Installing on Windows
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 1. Download and install `Anaconda for Windows <https://repo.anaconda.com/archive/Anaconda3-2023.07-2-Windows-x86_64.exe>`_ if not already installed. Follow the prompts to complete installation.
 
 2. Download and install `Git for Windows <https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.2/Git-2.42.0.2-64-bit.exe>`_ if not already installed.
@@ -38,7 +38,7 @@ Installing on Windows
 8. See below for usage information and example.
 
 Installing on Linux
--------------------
+^^^^^^^^^^^^^^^^^^^
 1. If not already installed, download and install `Anaconda for Linux <https://repo.anaconda.com/archive/Anaconda3-2023.07-2-Linux-x86_64.sh>`_. Anaconda3-2023.07-2 for Linux is used as an example here.
 
    * Alternatively, the script can be downloaded in the ``Terminal`` using the following command.
@@ -82,11 +82,11 @@ Installing on Linux
 8. See below for usage information and example.
 
 Usage
-=====
+-----
 This workflow is run from the command line.
 
 Parameters
-----------
+^^^^^^^^^^
 ``--input``: One or more MALDI-MS .d directories acquired from the timsTOF fleX in successive AutoXecute runs with
 different, non-overlapping mass range windows.
 
@@ -102,7 +102,7 @@ different, non-overlapping mass range windows.
 descriptive CV terms.
 
 Example
--------
+^^^^^^^
 
     .. code-block::
 

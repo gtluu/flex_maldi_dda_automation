@@ -11,8 +11,6 @@ Welcome to flex_maldi_dda_automation's documentation!
    fleX MS1 AutoXecute Generator <ms1_autox_generator>
    fleX MS/MS AutoXecute Generator <msms_autox_generator>
    MALDI Polymerization <maldi_polymerization>
-   Source Code <source>
-   Modules <modules>
    :maxdepth: 2
    :caption: Contents:
 
