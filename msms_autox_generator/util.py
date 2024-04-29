@@ -50,7 +50,7 @@ def get_geometry_files(geometry_path):
     """
     # Parse config file for inclusion list of acceptable geometries.
     config = configparser.ConfigParser()
-    config.read(os.path.join(os.path.dirname(__file__), 'etc', 'ms1_autox_generator.cfg'))
+    config.read(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'etc', 'ms1_autox_generator.cfg'))
     defaults = config['GeometryFiles']['defaults'].split(',')
 
     # Get list of .xeo geometry files from the GeometryFiles path.
@@ -82,7 +82,7 @@ def get_geometry_format(autox):
     :rtype: int
     """
     config = configparser.ConfigParser()
-    config.read(os.path.join(os.path.dirname(__file__), 'etc', 'ms1_autox_generator.cfg'))
+    config.read(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'etc', 'ms1_autox_generator.cfg'))
     if autox.attrib['geometry'] in config['GeometryFiles']['24spot_geometries'].split(','):
         return 24
     elif autox.attrib['geometry'] in config['GeometryFiles']['48spot_geometries'].split(','):
@@ -147,7 +147,7 @@ def get_plate_map_style(df, autox):
 
 
 def get_plate_map_legend():
-    return pd.read_csv(os.path.join(os.path.dirname(__file__), 'etc', 'plate_map_legend.csv'))
+    return pd.read_csv(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'etc', 'plate_map_legend.csv'))
 
 
 def blank_figure():
