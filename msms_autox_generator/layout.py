@@ -1258,9 +1258,9 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox):
                         style_header={'display': 'none',
                                       'textAlign': 'center'},
                         style_cell={'textAlign': 'center'},
-                        style_data_conditional=[{'if': {'column_id': 'Blank'},
+                        style_data_conditional=[{'if': {'row_index': 1},
                                                  'backgroundColor': 'green', 'color': 'white'},
-                                                {'if': {'column_id': 'Empty'},
+                                                {'if': {'row_index': 2},
                                                  'backgroundColor': 'gray', 'color': 'white'}]
                     ),
                     html.Div(

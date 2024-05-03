@@ -1,5 +1,6 @@
 import os
 import copy
+import random
 import configparser
 import numpy as np
 import pandas as pd
@@ -95,6 +96,10 @@ def get_geometry_format(autox):
         return 1536
     elif autox.attrib['geometry'] in config['GeometryFiles']['6144spot_geometries'].split(','):
         return 6144
+
+
+def get_rgb_color():
+    return f'rgb({str(random.randrange(0, 256))}, {str(random.randrange(0, 256))}, {str(random.randrange(0, 256))})'
 
 
 def get_plate_map(plate_format):
