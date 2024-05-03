@@ -54,6 +54,7 @@ AUTOX_PATH_DICT = {index: {'sample_name': spot_group.attrib['sampleName'],
 
 INDEXED_DATA = {}
 BLANK_SPOTS = []
+SPOT_GROUPS = {}
 
 app = DashProxy(prevent_initial_callbacks=True,
                 transforms=[MultiplexerTransform(),
@@ -140,6 +141,39 @@ def toggle_autox_validation_modal_close(n_clicks, raw_data_path_input, raw_data_
     return is_open
 
 
+@app.callback([Output('plate_map', 'style_data_conditional'),
+               Output('plate_map_legend', 'style_data_conditional'),
+               Output('plate_map_legend', 'data')],
+              Input('group_spots', 'n_clicks'),
+              [State('plate_map', 'selected_cells'),
+               State('plate_map', 'style_data_conditional'),
+               State('plate_map', 'data'),
+               State('plate_map_legend', 'style_data_conditional'),
+               State('plate_map_legend', 'data')])
+def group_spots(n_clicks, spots, plate_map_cell_style, plate_map_data, plate_map_legend_cell_style,
+                plate_map_legend_data):
+    global BLANK_SPOTS
+    gray_indices = [(style_dict['if']['row_index'], style_dict['if']['column_id'])
+                    for style_dict in plate_map_cell_style
+                    if 'if' in style_dict.keys() and 'backgroundColor' in style_dict.keys()
+                    if style_dict['backgroundColor'] == 'gray'
+                    if 'row_index' in style_dict['if'].keys() and 'column_id' in style_dict['if'].keys()]
+    indices = [(i['row'], i['column_id']) for i in spots]
+    indices = [i for i in indices if i not in gray_indices]
+    # TODO: allow user entered group name -> should be done with new modal window
+    # TODO: check to make sure user entered group does not exist yet
+    SPOT_GROUPS[f'group_{str(n_clicks)}'] = [plate_map_data[i[0]][i[1]] for i in indices]
+    color = get_rgb_color()
+    plate_map_cell_style = plate_map_cell_style + [{'if': {'row_index': row, 'column_id': col},
+                                                    'backgroundColor': color, 'color': 'white'}
+                                                   for row, col in indices]
+    plate_map_legend_df = pd.concat([pd.DataFrame(plate_map_legend_data),
+                                     pd.DataFrame({'Category': [f'group_{str(n_clicks)}']})], ignore_index=True)
+    plate_map_legend_cell_style = plate_map_legend_cell_style + [{'if': {'row_index': plate_map_legend_df.shape[0]-1},
+                                                                  'backgroundColor': color, 'color': 'white'}]
+    return plate_map_cell_style, plate_map_legend_cell_style, plate_map_legend_df.to_dict('records')
+
+
 @app.callback(Output('plate_map', 'style_data_conditional'),
               Input('mark_spot_as_blank', 'n_clicks'),
               [State('plate_map', 'selected_cells'),
@@ -170,6 +204,7 @@ def mark_spots_as_blank(n_clicks, spots, cell_style, data):
                          for row, col in indices]
 
 
+# TODO: update to also clear group spots from legend
 @app.callback(Output('plate_map', 'style_data_conditional'),
               Input('clear_blank_spots', 'n_clicks'))
 def clear_blank_spots(n_clicks):

@@ -1266,7 +1266,12 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox):
                     html.Div(
                         [
                             dbc.Button(
-                                'Mark Spots as Blank',
+                                'Group Selected Spots',
+                                id='group_spots',
+                                style={'margin': '20px'}
+                            ),
+                            dbc.Button(
+                                'Mark Selected Spots as Blank',
                                 id='mark_spot_as_blank',
                                 style={'margin': '20px'}
                             ),
