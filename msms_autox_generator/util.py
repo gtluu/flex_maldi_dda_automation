@@ -183,6 +183,7 @@ def get_spectrum(spectrum):
                                   hover_data={'m/z': ':.4f',
                                               'Intensity': ':.1f'},
                                   text=labels))
+    fig.update_traces(marker=dict(color='rgba(0,0,0,0)', size=1))
     fig.update_traces(textposition='top center')
     fig.update_layout(xaxis_tickformat='d',
                       yaxis_tickformat='~e')
