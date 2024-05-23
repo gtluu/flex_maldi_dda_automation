@@ -1276,8 +1276,8 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox):
                                 style={'margin': '20px'}
                             ),
                             dbc.Button(
-                                'Clear Blank Spots',
-                                id='clear_blank_spots',
+                                'Clear All Blank Spots and Spot Groups',
+                                id='clear_blanks_and_groups',
                                 style={'margin': '20px'}
                             )
                         ],
@@ -1370,6 +1370,48 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox):
             ),
             dbc.Modal(
                 [
+                    dbc.ModalHeader(dbc.ModalTitle('New Group Name')),
+                    dbc.ModalBody(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupText('Name'),
+                                dbc.Input(id='new_group_name_modal_input_value',
+                                          placeholder='',
+                                          value='',
+                                          type='text',
+                                          invalid=True)
+                            ],
+                            id='new_group_name_modal_input',
+                            style={'margin': '10px',
+                                   'display': 'flex'}
+                        )
+                    ),
+                    dbc.ModalFooter(dbc.Button('Save',
+                                               id='new_group_name_modal_save',
+                                               className='ms-auto'))
+                ],
+                id='new_group_name_modal',
+                size='lg',
+                centered=True,
+                is_open=False
+            ),
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle('Error')),
+                    dbc.ModalBody('One or more of the selected spots already belongs to a different group.'),
+                    dbc.ModalFooter(
+                        dbc.Button('Close',
+                                   id='group_spots_error_modal_close',
+                                   className='ms-auto')
+                    )
+                ],
+                id='group_spots_error_modal',
+                size='lg',
+                centered=True,
+                is_open=False
+            ),
+            dbc.Modal(
+                [
                     dbc.ModalHeader(dbc.ModalTitle('Blank Spectra Used to Generate Exclusion List')),
                     dbc.ModalBody(get_exclusion_list_spectra_layout()),
                     dbc.ModalFooter(dbc.Button('Close',
@@ -1443,7 +1485,7 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox):
                     dbc.ModalFooter(
                         dbc.Button('Close',
                                    id='run_success_close',
-                                   className='ms_auto')
+                                   className='ms-auto')
                     )
                 ],
                 id='run_success_modal',

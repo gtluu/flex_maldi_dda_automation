@@ -72,5 +72,10 @@ pyinstaller-hooks-contrib==2024.3
 pywin32-ctypes==0.2.2
 pyopenms==3.1.0
 toml==0.10.2
+imageio==2.34.1
+lazy-loader==0.4
+networkx==3.3
+tifffile==2024.5.3
+scikit-image==0.23.2
 git+https://github.com/mars20/icoshift.git
 git+https://github.com/gtluu/pyTDFSDK.git@v0.3.7
