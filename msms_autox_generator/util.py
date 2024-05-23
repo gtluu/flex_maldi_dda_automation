@@ -194,6 +194,7 @@ def get_spectrum(spectrum, label_peaks=True):
                                                   'Intensity': ':.1f'},
                                       text=labels))
         fig.update_traces(textposition='top center')
+        fig.update_traces(marker=dict(color='rgba(0,0,0,0)', size=1))
     else:
         fig = FigureResampler(px.line(data_frame=spectrum_df,
                                       x='m/z',
