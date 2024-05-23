@@ -1360,7 +1360,7 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, run_is_open, success_is
                                  if value['sample_name'] == spot_group.attrib['sampleName']][0] + '\n')
                     top_n_peaks = pd.DataFrame({'m/z': INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_mz_array,
                                                 'Intensity': INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_intensity_array})
-                    top_n_peaks = top_n_peaks.sort_values(by='Intensity', ascending=False).round(4)
+                    top_n_peaks = top_n_peaks.sort_values(by='Intensity', ascending=True).round(4)
                     top_n_peaks = top_n_peaks.drop_duplicates(subset='m/z')
                     top_n_peaks = top_n_peaks['m/z'].values.tolist()
                     for peak in top_n_peaks:
