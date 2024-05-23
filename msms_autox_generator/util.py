@@ -1,5 +1,6 @@
 import os
 import copy
+import random
 import configparser
 import numpy as np
 import pandas as pd
@@ -97,6 +98,10 @@ def get_geometry_format(autox):
         return 6144
 
 
+def get_rgb_color():
+    return f'rgb({str(random.randrange(0, 256))}, {str(random.randrange(0, 256))}, {str(random.randrange(0, 256))})'
+
+
 def get_plate_map(plate_format):
     """
     Obtain the plate map based on a given generalized MALDI target plate geometry format.
@@ -132,8 +137,9 @@ def get_plate_map(plate_format):
 
 
 def get_plate_map_style(df, autox):
-    style_dicts = [{'if': {'state': 'selected'},
-                    'backgroundColor': 'inherit !important'}]
+    #style_dicts = [{'if': {'state': 'selected'},
+    #                'backgroundColor': 'inherit !important'}]
+    style_dicts = []
     plate_coords = [coord for coords in df.values.tolist() for coord in coords]
     autox_coords = [cont.attrib['Pos_on_Scout'] for spot_group in autox for cont in spot_group]
     for coord in plate_coords:
@@ -163,30 +169,41 @@ def blank_figure():
     return fig
 
 
-def get_spectrum(spectrum):
+def get_spectrum(spectrum, label_peaks=True):
     """
     Plot the spectrum to a plotly.express.line plot wrapped by plotly_resampler.FigureResampler.
 
     :param spectrum: Spectrum object whose data is used to generate the figure.
-    :type spectrum: pymaldiproc.classes.OpenMALDISpectrum|pymaldiproc.classes.PMPTsfSpectrum|pymaldiproc.classes.PMPTdfSpectrum
+    :type spectrum: pymaldiproc.classes.OpenMALDISpectrum|pymaldiproc.classes.PMPTsfSpectrum|pymaldiproc.classes.PMP2DTdfSpectrum
+    :param label_peaks: Whether to label the peak based on peak picking that has been performed.
+    :type label_peaks: bool
     :return: Plotly figure containing mass spectrum.
     """
     spectrum_df = pd.DataFrame({'m/z': copy.deepcopy(spectrum.preprocessed_mz_array),
                                 'Intensity': copy.deepcopy(spectrum.preprocessed_intensity_array)})
-    labels = copy.deepcopy(np.round(copy.deepcopy(spectrum.preprocessed_mz_array), decimals=4).astype(str))
-    mask = np.ones(labels.size, dtype=bool)
-    mask[spectrum.peak_picking_indices] = False
-    labels[mask] = ''
-    fig = FigureResampler(px.line(data_frame=spectrum_df,
-                                  x='m/z',
-                                  y='Intensity',
-                                  hover_data={'m/z': ':.4f',
-                                              'Intensity': ':.1f'},
-                                  text=labels))
-    fig.update_traces(marker=dict(color='rgba(0,0,0,0)', size=1))
-    fig.update_traces(textposition='top center')
+
+    if label_peaks:
+        labels = copy.deepcopy(np.round(copy.deepcopy(spectrum.preprocessed_mz_array), decimals=4).astype(str))
+        mask = np.ones(labels.size, dtype=bool)
+        mask[spectrum.peak_picking_indices] = False
+        labels[mask] = ''
+        fig = FigureResampler(px.line(data_frame=spectrum_df,
+                                      x='m/z',
+                                      y='Intensity',
+                                      hover_data={'m/z': ':.4f',
+                                                  'Intensity': ':.1f'},
+                                      text=labels))
+        fig.update_traces(textposition='top center')
+        fig.update_traces(marker=dict(color='rgba(0,0,0,0)', size=1))
+    else:
+        fig = FigureResampler(px.line(data_frame=spectrum_df,
+                                      x='m/z',
+                                      y='Intensity',
+                                      hover_data={'m/z': ':.4f',
+                                                  'Intensity': ':.1f'}))
     fig.update_layout(xaxis_tickformat='d',
                       yaxis_tickformat='~e')
+
     return fig
 
 

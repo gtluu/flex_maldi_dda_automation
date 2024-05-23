@@ -1,6 +1,7 @@
 import os
 import gc
 import copy
+import random
 import tempfile
 import configparser
 import numpy as np
@@ -35,4 +36,4 @@ from msms_autox_generator.layout import *
 from msms_autox_generator.util import *
 from msms_autox_generator.run import *
 
-VERSION = '0.4.0b4'
+VERSION = '0.4.0b6'

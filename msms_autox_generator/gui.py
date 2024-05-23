@@ -12,6 +12,7 @@ from dash_extensions.enrich import (Input, Output, DashProxy, MultiplexerTransfo
 import dash_bootstrap_components as dbc
 from plotly_resampler import FigureResampler
 
+# TODO: figure out Dash data store instead of using all these global vars
 # default processing parameters from config file
 PREPROCESSING_PARAMS = get_preprocessing_params()
 PREPROCESSING_PARAMS['TRIM_SPECTRUM']['run'] = False
@@ -54,6 +55,7 @@ AUTOX_PATH_DICT = {index: {'sample_name': spot_group.attrib['sampleName'],
 
 INDEXED_DATA = {}
 BLANK_SPOTS = []
+SPOT_GROUPS = {}
 
 app = DashProxy(prevent_initial_callbacks=True,
                 transforms=[MultiplexerTransform(),
@@ -140,12 +142,92 @@ def toggle_autox_validation_modal_close(n_clicks, raw_data_path_input, raw_data_
     return is_open
 
 
-@app.callback(Output('plate_map', 'style_data_conditional'),
-              Input('mark_spot_as_blank', 'n_clicks'),
+@app.callback([Output('plate_map', 'style_data_conditional'),
+               Output('plate_map_legend', 'style_data_conditional'),
+               Output('plate_map_legend', 'data'),
+               Output('new_group_name_modal', 'is_open'),
+               Output('new_group_name_modal_input_value', 'value'),
+               Output('plate_map', 'selected_cells'),
+               Output('plate_map', 'active_cell'),
+               Output('group_spots_error_modal', 'is_open')],
+              [Input('group_spots', 'n_clicks'),
+               Input('new_group_name_modal_save', 'n_clicks'),
+               Input('group_spots_error_modal_close', 'n_clicks')],
               [State('plate_map', 'selected_cells'),
                State('plate_map', 'style_data_conditional'),
-               State('plate_map', 'data')])
-def mark_spots_as_blank(n_clicks, spots, cell_style, data):
+               State('plate_map', 'data'),
+               State('plate_map_legend', 'style_data_conditional'),
+               State('plate_map_legend', 'data'),
+               State('new_group_name_modal_input_value', 'value'),
+               State('new_group_name_modal_input_value', 'valid'),
+               State('new_group_name_modal', 'is_open'),
+               State('group_spots_error_modal', 'is_open')])
+def group_spots(n_clicks_group_spots, n_clicks_new_group_name_modal_save, n_clicks_group_spots_error_modal_close, spots,
+                plate_map_cell_style, plate_map_data, plate_map_legend_cell_style, plate_map_legend_data,
+                new_group_name, new_group_name_valid, new_group_name_modal_is_open,
+                group_name_spots_error_modal_is_open):
+    changed_id = [i['prop_id'] for i in callback_context.triggered][0]
+    global BLANK_SPOTS
+    global SPOT_GROUPS
+    if changed_id == 'group_spots.n_clicks':
+        if spots:
+            error = False
+            for spot in spots:
+                spot = plate_map_data[spot['row']][spot['column_id']]
+                if spot in BLANK_SPOTS or spot in [i for value in SPOT_GROUPS.values() for i in value]:
+                    error = True
+            if not error:
+                return plate_map_cell_style, plate_map_legend_cell_style, plate_map_legend_data, not new_group_name_modal_is_open, '', spots, None, group_name_spots_error_modal_is_open
+            elif error:
+                return plate_map_cell_style, plate_map_legend_cell_style, plate_map_legend_data, new_group_name_modal_is_open, '', spots, None, not group_name_spots_error_modal_is_open
+    elif changed_id == 'new_group_name_modal_save.n_clicks' and new_group_name_valid and \
+            new_group_name not in pd.DataFrame(plate_map_legend_data)['Category'].values.tolist():
+        gray_indices = [(style_dict['if']['row_index'], style_dict['if']['column_id'])
+                        for style_dict in plate_map_cell_style
+                        if 'if' in style_dict.keys() and 'backgroundColor' in style_dict.keys()
+                        if style_dict['backgroundColor'] == 'gray'
+                        if 'row_index' in style_dict['if'].keys() and 'column_id' in style_dict['if'].keys()]
+        indices = [(i['row'], i['column_id']) for i in spots]
+        indices = [i for i in indices if i not in gray_indices]
+        SPOT_GROUPS[new_group_name] = [plate_map_data[i[0]][i[1]] for i in indices]
+        color = get_rgb_color()
+        plate_map_cell_style = plate_map_cell_style + [{'if': {'row_index': row, 'column_id': col},
+                                                        'backgroundColor': color, 'color': 'white'}
+                                                       for row, col in indices]
+        plate_map_legend_df = pd.concat([pd.DataFrame(plate_map_legend_data),
+                                         pd.DataFrame({'Category': [new_group_name]})], ignore_index=True)
+        plate_map_legend_cell_style = plate_map_legend_cell_style + [{'if': {'row_index': plate_map_legend_df.shape[0]-1},
+                                                                      'backgroundColor': color, 'color': 'white'}]
+        return plate_map_cell_style, plate_map_legend_cell_style, plate_map_legend_df.to_dict('records'), not new_group_name_modal_is_open, '', [], None, group_name_spots_error_modal_is_open
+    elif changed_id == 'group_spots_error_modal_close.n_clicks':
+        return plate_map_cell_style, plate_map_legend_cell_style, plate_map_legend_data, new_group_name_modal_is_open, '', spots, None, not group_name_spots_error_modal_is_open
+    else:
+        return plate_map_cell_style, plate_map_legend_cell_style, plate_map_legend_data, new_group_name_modal_is_open, '', [], None, group_name_spots_error_modal_is_open
+
+
+@app.callback([Output('new_group_name_modal_input_value', 'valid'),
+               Output('new_group_name_modal_input_value', 'invalid')],
+              Input('new_group_name_modal_input_value', 'value'),
+              [State('new_group_name_modal_input_value', 'value'),
+               State('plate_map_legend', 'data')])
+def check_if_new_group_name_valid(input_value, state_value, plate_map_legend_data):
+    if state_value != '' and state_value not in pd.DataFrame(plate_map_legend_data)['Category'].values.tolist():
+        return True, False
+    return False, True
+
+
+@app.callback([Output('plate_map', 'style_data_conditional'),
+               Output('plate_map', 'selected_cells'),
+               Output('plate_map', 'active_cell'),
+               Output('group_spots_error_modal', 'is_open')],
+              [Input('mark_spot_as_blank', 'n_clicks'),
+               Input('group_spots_error_modal_close', 'n_clicks')],
+              [State('plate_map', 'selected_cells'),
+               State('plate_map', 'style_data_conditional'),
+               State('plate_map', 'data'),
+               State('group_spots_error_modal', 'is_open')])
+def mark_spots_as_blank(n_clicks_mark_spot_as_blank, n_clicks_group_spots_error_modal_close, spots, cell_style, data,
+                        is_open):
     """
     Dash callback to mark a selected spot in the plate map as a 'blank' spot by changing the cell style and adding the
     cell ID to the global variable BLANK_SPOTS.
@@ -156,37 +238,59 @@ def mark_spots_as_blank(n_clicks, spots, cell_style, data):
     :param data: State signal containing plate map data.
     :return: Style data with the updated blank spot style for the selected cells appended.
     """
+    changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     global BLANK_SPOTS
-    gray_indices = [(style_dict['if']['row_index'], style_dict['if']['column_id'])
-                    for style_dict in cell_style
-                    if 'if' in style_dict.keys() and 'backgroundColor' in style_dict.keys()
-                    if style_dict['backgroundColor'] == 'gray'
-                    if 'row_index' in style_dict['if'].keys() and 'column_id' in style_dict['if'].keys()]
-    indices = [(i['row'], i['column_id']) for i in spots]
-    indices = [i for i in indices if i not in gray_indices]
-    BLANK_SPOTS = BLANK_SPOTS + [data[i[0]][i[1]] for i in indices if data[i[0]][i[1]] not in BLANK_SPOTS]
-    return cell_style + [{'if': {'row_index': row, 'column_id': col},
-                          'backgroundColor': 'green', 'color': 'white'}
-                         for row, col in indices]
+    global SPOT_GROUPS
+    if changed_id == 'mark_spot_as_blank.n_clicks':
+        error = False
+        for spot in spots:
+            spot = data[spot['row']][spot['column_id']]
+            if spot in BLANK_SPOTS or spot in [i for value in SPOT_GROUPS.values() for i in value]:
+                error = True
+        if not error:
+            gray_indices = [(style_dict['if']['row_index'], style_dict['if']['column_id'])
+                            for style_dict in cell_style
+                            if 'if' in style_dict.keys() and 'backgroundColor' in style_dict.keys()
+                            if style_dict['backgroundColor'] == 'gray'
+                            if 'row_index' in style_dict['if'].keys() and 'column_id' in style_dict['if'].keys()]
+            indices = [(i['row'], i['column_id']) for i in spots]
+            indices = [i for i in indices if i not in gray_indices]
+            BLANK_SPOTS = BLANK_SPOTS + [data[i[0]][i[1]] for i in indices if data[i[0]][i[1]] not in BLANK_SPOTS]
+            return cell_style + [{'if': {'row_index': row, 'column_id': col},
+                                  'backgroundColor': 'green', 'color': 'white'}
+                                 for row, col in indices], [], None, is_open
+        elif error:
+            return cell_style, [], None, not is_open
+    elif changed_id == 'group_spots_error_modal_close.n_clicks':
+        return cell_style, [], None, not is_open
 
 
-@app.callback(Output('plate_map', 'style_data_conditional'),
-              Input('clear_blank_spots', 'n_clicks'))
-def clear_blank_spots(n_clicks):
+@app.callback([Output('plate_map', 'style_data_conditional'),
+               Output('plate_map_legend', 'style_data_conditional'),
+               Output('plate_map_legend', 'data')],
+              Input('clear_blanks_and_groups', 'n_clicks'))
+def clear_blanks_and_groups(n_clicks):
     """
-    Dash callback to remove all blank spot styling from the plate map and remove all blank spot IDs from the global
-    variable BLANK_SPOTS.
+    Dash callback to remove all blank spot and spot group styling from the plate map, remove all blank spot IDs from
+    the global variable BLANK_SPOTS, and remove all spot groups from the global variable SPOT_GROUPS.
 
     :param n_clicks: Input signal if the clear_blank_spots button is clicked.
     :return: Default style data for the plate map.
     """
     global BLANK_SPOTS
+    global SPOT_GROUPS
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
-    if changed_id == 'clear_blank_spots.n_clicks':
+    if changed_id == 'clear_blanks_and_groups.n_clicks':
         BLANK_SPOTS = []
+        SPOT_GROUPS = {}
         for key, spectrum in INDEXED_DATA.items():
             spectrum.undo_all_processing()
-        return get_plate_map_style(get_plate_map(PLATE_FORMAT), MS1_AUTOX)
+        return (get_plate_map_style(get_plate_map(PLATE_FORMAT), MS1_AUTOX),
+                [{'if': {'row_index': 1},
+                  'backgroundColor': 'green', 'color': 'white'},
+                 {'if': {'row_index': 2},
+                  'backgroundColor': 'gray', 'color': 'white'}],
+                get_plate_map_legend().to_dict('records'))
 
 
 @ app.callback([Output('exclusion_list', 'data'),
@@ -1008,6 +1112,7 @@ def preview_precursor_list(n_clicks_preview,
         menu values, and a blank figure to serve as a placeholder in the modal window body.
     """
     global INDEXED_DATA
+    global SPOT_GROUPS
     global PREPROCESSING_PARAMS
     global BLANK_SPOTS
     global SAMPLE_PARAMS_LOG
@@ -1043,30 +1148,118 @@ def preview_precursor_list(n_clicks_preview,
         # peak picking
         for key, spectrum in INDEXED_DATA.items():
             spectrum.peak_picking(**params['PEAK_PICKING'])
-        # remove peaks found in exclusion list
-        if params['PRECURSOR_SELECTION']['use_exclusion_list']:
-            exclusion_list = pd.DataFrame(exclusion_list)
-            if not exclusion_list.empty:
-                for key, spectrum in INDEXED_DATA.items():
-                    spectrum_df = pd.DataFrame(data={'m/z': spectrum.peak_picked_mz_array,
-                                                     'Intensity': spectrum.peak_picked_intensity_array,
-                                                     'Indices': spectrum.peak_picking_indices})
-                    merged_df = pd.merge_asof(spectrum_df,
-                                              exclusion_list.rename(columns={'m/z': 'exclusion_list'}),
-                                              left_on='m/z',
-                                              right_on='exclusion_list',
-                                              tolerance=params['PRECURSOR_SELECTION']['exclusion_list_tolerance'],
-                                              direction='nearest')
-                    merged_df = merged_df.drop(merged_df.dropna().index)
-                    spectrum.peak_picked_mz_array = merged_df['m/z'].values
-                    spectrum.peak_picked_intensity_array = merged_df['Intensity'].values
-                    spectrum.peak_picking_indices = merged_df['Indices'].values
-        # subset peak picked peaks to only include top n peaks
-        for key, spectrum in INDEXED_DATA.items():
-            top_n_indices = np.argsort(spectrum.peak_picked_intensity_array)[::-1][:params['PRECURSOR_SELECTION']['top_n']]
-            spectrum.peak_picked_mz_array = spectrum.peak_picked_mz_array[top_n_indices]
-            spectrum.peak_picked_intensity_array = spectrum.peak_picked_intensity_array[top_n_indices]
-            spectrum.peak_picking_indices = spectrum.peak_picking_indices[top_n_indices]
+        # groups have been defined
+        if len(SPOT_GROUPS.keys()) > 0:
+            # process groups
+            spots_in_group = [i for value in SPOT_GROUPS.values() for i in value]
+            for group, list_of_spots in SPOT_GROUPS.items():
+                group_spectra = [INDEXED_DATA[spot] for spot in list_of_spots]
+                group_feature_matrix = get_feature_matrix(group_spectra, missing_value_imputation=False)
+                group_feature_matrix.to_csv('C:\\Users\\bass\\data\\group_feature_matrix.csv')
+                group_consensus_df = pd.DataFrame(data={'m/z': np.unique(group_feature_matrix['mz'].values),
+                                                        'Intensity': group_feature_matrix.loc[:, group_feature_matrix.columns != 'mz'].mean(axis=1)})
+                # remove peaks found in exclusion list
+                if params['PRECURSOR_SELECTION']['use_exclusion_list']:
+                    exclusion_list = pd.DataFrame(exclusion_list)
+                    if not exclusion_list.empty:
+                        merged_df = pd.merge_asof(group_consensus_df,
+                                                  exclusion_list.rename(columns={'m/z': 'exclusion_list'}),
+                                                  left_on='m/z',
+                                                  right_on='exclusion_list',
+                                                  tolerance=params['PRECURSOR_SELECTION']['exclusion_list_tolerance'],
+                                                  direction='nearest')
+                        group_consensus_df = merged_df.drop(merged_df.dropna().index)
+                group_consensus_df = group_consensus_df.sort_values(by='Intensity', ascending=False).reset_index(drop=True)[:params['PRECURSOR_SELECTION']['top_n']]
+                group_consensus_df = group_consensus_df.sort_values(by='Intensity', ascending=True).reset_index(drop=True)
+                feature_dict = {}
+                for index, row in group_consensus_df.iterrows():
+                    single_feature_df = pd.DataFrame({'m/z': [row['m/z']]})
+                    single_feature_merged_df = []
+                    for group_spectrum in group_spectra:
+                        group_spectrum_df = pd.DataFrame(data={'m/z': group_spectrum.peak_picked_mz_array,
+                                                               'Intensity': group_spectrum.peak_picked_intensity_array,
+                                                               'Indices': group_spectrum.peak_picking_indices,
+                                                               'Spot': group_spectrum.coord})
+                        single_feature_merged_df.append(pd.merge_asof(single_feature_df,
+                                                                      group_spectrum_df,
+                                                                      tolerance=params['PRECURSOR_SELECTION']['exclusion_list_tolerance'],
+                                                                      direction='nearest').sort_values(by='Intensity', ascending=False).reset_index(drop=True))
+                    single_feature_merged_df = pd.concat(single_feature_merged_df, ignore_index=True).sort_values(by='Intensity', ascending=False).reset_index(drop=True)
+                    mz = single_feature_merged_df.values.tolist()[0][0]
+                    intensity = single_feature_merged_df.values.tolist()[0][1]
+                    array_index = single_feature_merged_df.values.tolist()[0][2]
+                    spot = single_feature_merged_df.values.tolist()[0][3]
+                    if spot not in feature_dict.keys():
+                        feature_dict[spot] = {}
+                        feature_dict[spot]['mz'] = [mz]
+                        feature_dict[spot]['intensity'] = [intensity]
+                        feature_dict[spot]['index'] = [int(array_index)]
+                    elif spot in feature_dict.keys():
+                        feature_dict[spot]['mz'].append(mz)
+                        feature_dict[spot]['intensity'].append(intensity)
+                        feature_dict[spot]['index'].append(int(array_index))
+                for spot in list_of_spots:
+                    INDEXED_DATA[spot].peak_picked_mz_array = None
+                    INDEXED_DATA[spot].peak_picked_intensity_array = None
+                    INDEXED_DATA[spot].peak_picking_indices = None
+                for spot, values in feature_dict.items():
+                    INDEXED_DATA[spot].peak_picked_mz_array = np.array(values['mz'])
+                    INDEXED_DATA[spot].peak_picked_intensity_array = np.array(values['intensity'])
+                    INDEXED_DATA[spot].peak_picking_indices = np.array(values['index'])
+            # process all other spots not found in a group
+            # remove peaks found in exclusion list
+            if params['PRECURSOR_SELECTION']['use_exclusion_list']:
+                exclusion_list = pd.DataFrame(exclusion_list)
+                if not exclusion_list.empty:
+                    for key, spectrum in INDEXED_DATA.items():
+                        if key not in spots_in_group:
+                            spectrum_df = pd.DataFrame(data={'m/z': spectrum.peak_picked_mz_array,
+                                                             'Intensity': spectrum.peak_picked_intensity_array,
+                                                             'Indices': spectrum.peak_picking_indices})
+                            merged_df = pd.merge_asof(spectrum_df,
+                                                      exclusion_list.rename(columns={'m/z': 'exclusion_list'}),
+                                                      left_on='m/z',
+                                                      right_on='exclusion_list',
+                                                      tolerance=params['PRECURSOR_SELECTION'][
+                                                          'exclusion_list_tolerance'],
+                                                      direction='nearest')
+                            merged_df = merged_df.drop(merged_df.dropna().index)
+                            spectrum.peak_picked_mz_array = merged_df['m/z'].values
+                            spectrum.peak_picked_intensity_array = merged_df['Intensity'].values
+                            spectrum.peak_picking_indices = merged_df['Indices'].values
+            # subset peak picked peaks to only include top n peaks
+            for key, spectrum in INDEXED_DATA.items():
+                if key not in spots_in_group:
+                    top_n_indices = np.argsort(spectrum.peak_picked_intensity_array)[::-1][:params['PRECURSOR_SELECTION']['top_n']]
+                    spectrum.peak_picked_mz_array = spectrum.peak_picked_mz_array[top_n_indices]
+                    spectrum.peak_picked_intensity_array = spectrum.peak_picked_intensity_array[top_n_indices]
+                    spectrum.peak_picking_indices = spectrum.peak_picking_indices[top_n_indices]
+        # no groups defined
+        else:
+            # remove peaks found in exclusion list
+            if params['PRECURSOR_SELECTION']['use_exclusion_list']:
+                exclusion_list = pd.DataFrame(exclusion_list)
+                if not exclusion_list.empty:
+                    for key, spectrum in INDEXED_DATA.items():
+                        spectrum_df = pd.DataFrame(data={'m/z': spectrum.peak_picked_mz_array,
+                                                         'Intensity': spectrum.peak_picked_intensity_array,
+                                                         'Indices': spectrum.peak_picking_indices})
+                        merged_df = pd.merge_asof(spectrum_df,
+                                                  exclusion_list.rename(columns={'m/z': 'exclusion_list'}),
+                                                  left_on='m/z',
+                                                  right_on='exclusion_list',
+                                                  tolerance=params['PRECURSOR_SELECTION']['exclusion_list_tolerance'],
+                                                  direction='nearest')
+                        merged_df = merged_df.drop(merged_df.dropna().index)
+                        spectrum.peak_picked_mz_array = merged_df['m/z'].values
+                        spectrum.peak_picked_intensity_array = merged_df['Intensity'].values
+                        spectrum.peak_picking_indices = merged_df['Indices'].values
+            # subset peak picked peaks to only include top n peaks
+            for key, spectrum in INDEXED_DATA.items():
+                top_n_indices = np.argsort(spectrum.peak_picked_intensity_array)[::-1][:params['PRECURSOR_SELECTION']['top_n']]
+                spectrum.peak_picked_mz_array = spectrum.peak_picked_mz_array[top_n_indices]
+                spectrum.peak_picked_intensity_array = spectrum.peak_picked_intensity_array[top_n_indices]
+                spectrum.peak_picking_indices = spectrum.peak_picking_indices[top_n_indices]
         # populate dropdown menu
         dropdown_options = [{'label': i, 'value': i} for i in INDEXED_DATA.keys() if i not in BLANK_SPOTS]
         dropdown_value = [i for i in INDEXED_DATA.keys() if i not in BLANK_SPOTS]
@@ -1092,7 +1285,11 @@ def update_preview_spectrum(value):
     :return: Tuple of spectrum figure as a plotly.express.line plot and data store for plotly_resampler.
     """
     global INDEXED_DATA
-    fig = get_spectrum(INDEXED_DATA[value])
+    if INDEXED_DATA[value].peak_picking_indices is None:
+        label_peaks = False
+    else:
+        label_peaks = True
+    fig = get_spectrum(INDEXED_DATA[value], label_peaks)
     cleanup_file_system_backend()
     return fig, Serverside(fig)
 
@@ -1145,7 +1342,9 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, run_is_open, success_is
         for spot_group in MS1_AUTOX:
             log += f"Spot Group: {spot_group.attrib['sampleName']}\n"
             for cont in spot_group:
-                if cont.attrib['Pos_on_Scout'] not in BLANK_SPOTS:
+                if cont.attrib['Pos_on_Scout'] not in BLANK_SPOTS and \
+                        INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_mz_array is not None and \
+                        INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_intensity_array is not None:
                     new_spot_group = et.SubElement(new_autox, spot_group.tag, attrib=spot_group.attrib)
                     new_spot_group.attrib['sampleName'] = f"{new_spot_group.attrib['sampleName']}_{cont.attrib['Pos_on_Scout']}_MSMS"
                     if method_checkbox and os.path.exists(method):
@@ -1161,7 +1360,7 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, run_is_open, success_is
                                  if value['sample_name'] == spot_group.attrib['sampleName']][0] + '\n')
                     top_n_peaks = pd.DataFrame({'m/z': INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_mz_array,
                                                 'Intensity': INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_intensity_array})
-                    top_n_peaks = top_n_peaks.sort_values(by='Intensity', ascending=False).round(4)
+                    top_n_peaks = top_n_peaks.sort_values(by='Intensity', ascending=True).round(4)
                     top_n_peaks = top_n_peaks.drop_duplicates(subset='m/z')
                     top_n_peaks = top_n_peaks['m/z'].values.tolist()
                     for peak in top_n_peaks:
