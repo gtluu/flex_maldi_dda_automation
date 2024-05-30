@@ -12,20 +12,17 @@ from dash_extensions.enrich import (Input, Output, DashProxy, MultiplexerTransfo
 import dash_bootstrap_components as dbc
 from plotly_resampler import FigureResampler
 
-# TODO: figure out Dash data store instead of using all these global vars
-
-# parse raw data and method paths
-
-INDEXED_DATA = {}
+# get AutoXecute sequence path
+AUTOX_SEQ = get_autox_sequence_filename()
 
 app = DashProxy(prevent_initial_callbacks=True,
                 transforms=[MultiplexerTransform(),
                             ServersideOutputTransform(backends=[FileSystemBackend(cache_dir=FILE_SYSTEM_BACKEND)])],
                 external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.layout = get_dashboard_layout(get_maldi_dda_preprocessing_params(),
-                                  get_geometry_format(et.parse(get_autox_sequence_filename()).getroot()),
-                                  get_autox_path_dict(),
-                                  et.parse(get_autox_sequence_filename()).getroot())
+                                  get_geometry_format(et.parse(AUTOX_SEQ).getroot()),
+                                  get_autox_path_dict(AUTOX_SEQ),
+                                  AUTOX_SEQ)
 
 
 @app.callback([Output({'type': 'raw_data_path_input', 'index': MATCH}, 'value'),
@@ -76,26 +73,28 @@ def update_method_path(n_clicks, button_id, autox_path_dict):
         return dirname, False, True
 
 
-@app.callback(Output('autox_validation_modal', 'is_open'),
-              Input('autox_validation_modal_close', 'n_clicks'),
+@app.callback([Output('autox_validation_modal', 'is_open'),
+               Output('store_indexed_data', 'data')],
+              [Input('autox_validation_modal_close', 'n_clicks'),
+               Input('store_indexed_data', 'data')],
               [State({'type': 'raw_data_path_input', 'index': ALL}, 'value'),
                State({'type': 'raw_data_path_input', 'index': ALL}, 'valid'),
                State({'type': 'method_path_input', 'index': ALL}, 'valid'),
                State('autox_validation_modal', 'is_open')])
-def toggle_autox_validation_modal_close(n_clicks, raw_data_path_input, raw_data_path_input_valid,
+def toggle_autox_validation_modal_close(n_clicks, indexed_data, raw_data_path_input, raw_data_path_input_valid,
                                         method_path_input_valid, is_open):
     """
     Dash callback to toggle the AutoXecute sequence data/method validation modal window. Data is imported when all
     data and method paths are valid and the modal window is closed.
 
     :param n_clicks: Input signal if the autox_validation_modal_close button is clicked.
+    :param indexed_data: Input signal containing data from store_indexed_data.
     :param raw_data_path_input: List of paths of all the raw data to be loaded.
     :param raw_data_path_input_valid: List of booleans stating whether the raw data paths are valid or not.
     :param method_path_input_valid: List of booleans stating whether the method paths are valid or not.
     :param is_open: State signal to determine whether the autox_validation_modal modal window is open.
     :return: Output signal to determine whether the autox_validation_modal modal window is open.
     """
-    global INDEXED_DATA
     if n_clicks:
         for i, j in zip(raw_data_path_input_valid, method_path_input_valid):
             if not i or not j:
@@ -103,9 +102,9 @@ def toggle_autox_validation_modal_close(n_clicks, raw_data_path_input, raw_data_
         for path in raw_data_path_input:
             data = import_timstof_raw_data(path, mode='profile')
             for spectrum in data:
-                INDEXED_DATA[spectrum.coord] = spectrum
-        return not is_open
-    return is_open
+                indexed_data[spectrum.coord] = path
+        return not is_open, indexed_data
+    return is_open, indexed_data
 
 
 @app.callback([Output('plate_map', 'style_data_conditional'),
@@ -141,10 +140,19 @@ def group_spots(n_clicks_group_spots, n_clicks_new_group_name_modal_save, n_clic
             error = False
             for spot in spots:
                 spot = plate_map_data[spot['row']][spot['column_id']]
+                print(blank_spots)
                 if spot in blank_spots['spots'] or spot in [i for value in spot_groups.values() for i in value]:
                     error = True
             if not error:
-                return plate_map_cell_style, plate_map_legend_cell_style, plate_map_legend_data, not new_group_name_modal_is_open, '', spots, None, group_name_spots_error_modal_is_open
+                return (plate_map_cell_style,
+                        plate_map_legend_cell_style,
+                        plate_map_legend_data,
+                        not new_group_name_modal_is_open,
+                        '',
+                        spots,
+                        None,
+                        group_name_spots_error_modal_is_open,
+                        spot_groups)
             elif error:
                 return (plate_map_cell_style,
                         plate_map_legend_cell_style,
@@ -259,9 +267,9 @@ def mark_spots_as_blank(n_clicks_mark_spot_as_blank, n_clicks_group_spots_error_
                             if 'row_index' in style_dict['if'].keys() and 'column_id' in style_dict['if'].keys()]
             indices = [(i['row'], i['column_id']) for i in spots]
             indices = [i for i in indices if i not in gray_indices]
-            blank_spots = blank_spots['spots'] + [data[i[0]][i[1]]
-                                                  for i in indices
-                                                  if data[i[0]][i[1]] not in blank_spots['spots']]
+            blank_spots['spots'] = blank_spots['spots'] + [data[i[0]][i[1]]
+                                                           for i in indices
+                                                           if data[i[0]][i[1]] not in blank_spots['spots']]
             return cell_style + [{'if': {'row_index': row, 'column_id': col},
                                   'backgroundColor': 'green', 'color': 'white'}
                                  for row, col in indices], [], None, is_open, blank_spots
@@ -291,8 +299,6 @@ def clear_blanks_and_groups(n_clicks, plate_format, autox_seq):
     """
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'clear_blanks_and_groups.n_clicks':
-        for key, spectrum in INDEXED_DATA.items():
-            spectrum.undo_all_processing()
         return (get_plate_map_style(get_plate_map(plate_format), et.parse(autox_seq).getroot()),
                 [{'if': {'row_index': 1},
                   'backgroundColor': 'green', 'color': 'white'},
@@ -308,8 +314,9 @@ def clear_blanks_and_groups(n_clicks, plate_format, autox_seq):
                 Output('store_blank_params_log', 'data')],
                [Input('generate_exclusion_list_from_blank_spots', 'n_clicks'),
                 Input('store_preprocessing_params', 'data'),
-                Input('store_blank_spots', 'data')])
-def generate_exclusion_list_from_blank_spots(n_clicks, preprocessing_params, blank_spots):
+                Input('store_blank_spots', 'data'),
+                Input('store_indexed_data', 'data')])
+def generate_exclusion_list_from_blank_spots(n_clicks, preprocessing_params, blank_spots, indexed_data):
     """
     Dash callback to perform preprocessing using parameters defined in the Edit Preprocessing Parameters modal window
     on blank spots marked on the plate map and generate an exclusion list to be displayed in the exclusion list table
@@ -318,13 +325,19 @@ def generate_exclusion_list_from_blank_spots(n_clicks, preprocessing_params, bla
     :param n_clicks: Input signal if the generate_exclusion_list_from_blank_spots button is clicked.
     :param preprocessing_params: Input signal containing data from store_preprocessing_params.
     :param blank_spots: Input signal containing data from store_blank_spots.
+    :param indexed_data: Input signal containing data from store_indexed_data.
     :return: Tuple of updated exclusion list data table data, style data to make the view_exclusion_list_spectra button
         visible, and data from blank_params_log.
     """
-    global INDEXED_DATA
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'generate_exclusion_list_from_blank_spots.n_clicks':
-        blank_spectra = [INDEXED_DATA[spot] for spot in blank_spots['spots']]
+        blank_spectra = []
+        print(blank_spots)
+        for spot in blank_spots['spots']:
+            data = import_timstof_raw_data(indexed_data[spot], mode='profile')
+            blank_spectra = blank_spectra + [spectrum for spectrum in data if spectrum.coord == spot]
+            print(blank_spectra)
+            print([i.coord for i in blank_spectra])
         params = copy.deepcopy(preprocessing_params)
         blank_params_log = copy.deepcopy(preprocessing_params)
         # preprocessing
@@ -368,15 +381,17 @@ def generate_exclusion_list_from_blank_spots(n_clicks, preprocessing_params, bla
                Output('exclusion_list_blank_spectra_figure', 'figure')],
               [Input('view_exclusion_list_spectra', 'n_clicks'),
                Input('exclusion_list_blank_spectra_modal_close', 'n_clicks'),
-               Input('store_blank_spots', 'data')],
+               Input('store_blank_spots', 'data'),
+               Input('store_indexed_data', 'data')],
               State('exclusion_list_blank_spectra_modal', 'is_open'))
-def view_exclusion_list_spectra(n_clicks_view, n_clicks_close, blank_spots, is_open):
+def view_exclusion_list_spectra(n_clicks_view, n_clicks_close, blank_spots, indexed_data, is_open):
     """
     Dash callback to view the preprocessed blank spot spectra that were used to generate the exclusion list.
 
     :param n_clicks_view: Input signal if the view_exclusion_list_spectra button is clicked.
     :param n_clicks_close: Input signal if the exclusion_list_blank_spectra_modal_close button is clicked.
     :param blank_spots: Input signal containing data from store_blank_spots.
+    :param indexed_data: Input signal containing data from store_indexed_data.
     :param is_open: State signal to determine whether the exclusion_list_blank_spectra_modal modal window is open.
     :return: Tuple of the output signal to determine whether the exclusion_list_blank_spectra_modal modal window is
         open, the list of blank spectra IDs to populate the dropdown menu options, the list of blank spectra IDs to
@@ -385,8 +400,8 @@ def view_exclusion_list_spectra(n_clicks_view, n_clicks_close, blank_spots, is_o
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'view_exclusion_list_spectra.n_clicks':
         # populate dropdown menu
-        dropdown_options = [{'label': i, 'value': i} for i in INDEXED_DATA.keys() if i in blank_spots['spots']]
-        dropdown_value = [i for i in INDEXED_DATA.keys() if i in blank_spots['spots']]
+        dropdown_options = [{'label': i, 'value': i} for i in indexed_data.keys() if i in blank_spots['spots']]
+        dropdown_value = [i for i in indexed_data.keys() if i in blank_spots['spots']]
         return not is_open, dropdown_options, dropdown_value, blank_figure()
     if changed_id == 'exclusion_list_blank_spectra_modal_close.n_clicks':
         return not is_open, [], [], blank_figure()
@@ -395,17 +410,48 @@ def view_exclusion_list_spectra(n_clicks_view, n_clicks_close, blank_spots, is_o
 
 @app.callback([Output('exclusion_list_blank_spectra_figure', 'figure'),
                Output('store_plot', 'data')],
-              Input('exclusion_list_blank_spectra_id', 'value'))
-def update_blank_spectrum(value):
+              [Input('exclusion_list_blank_spectra_id', 'value'),
+               Input('store_blank_spots', 'data'),
+               Input('store_blank_params_log', 'data'),
+               Input('store_indexed_data', 'data'),])
+def update_blank_spectrum(value, blank_spots, blank_params_log, indexed_data):
     """
     Dash callback to plot the spectrum selected from the exclusion_list_blank_spectra_id dropdown using plotly.express
     and plotly_resampler.FigureResampler.
 
-    :param value: Input signal exclusion_list_blank_spectra_id used as the key in INDEXED_DATA.
+    :param value: Input signal exclusion_list_blank_spectra_id used as the key in store_indexed_data.
+    :param blank_spots: Input signal containing data from store_blank_spots.
+    :param blank_params_log: Input signal containing data from store_blank_params_log.
+    :param indexed_data: Input signal containing data from store_indexed_data.
     :return: Tuple of spectrum figure as a plotly.express.line plot and data store for plotly_resampler.
     """
-    global INDEXED_DATA
-    fig = get_spectrum(INDEXED_DATA[value])
+    blank_spectra = []
+    for spot in blank_spots['spots']:
+        data = import_timstof_raw_data(indexed_data[spot], mode='profile')
+        blank_spectra = blank_spectra + [spectrum for spectrum in data if spectrum.coord == spot]
+    blank_spectrum = [spectrum for spectrum in blank_spectra if spectrum.coord == value][0]
+    # preprocessing
+    if blank_params_log['TRIM_SPECTRUM']['run']:
+        del blank_params_log['TRIM_SPECTRUM']['run']
+        blank_spectrum.trim_spectrum(**blank_params_log['TRIM_SPECTRUM'])
+    if blank_params_log['TRANSFORM_INTENSITY']['run']:
+        del blank_params_log['TRANSFORM_INTENSITY']['run']
+        blank_spectrum.transform_intensity(**blank_params_log['TRANSFORM_INTENSITY'])
+    if blank_params_log['SMOOTH_BASELINE']['run']:
+        del blank_params_log['SMOOTH_BASELINE']['run']
+        blank_spectrum.smooth_baseline(**blank_params_log['SMOOTH_BASELINE'])
+    if blank_params_log['REMOVE_BASELINE']['run']:
+        del blank_params_log['REMOVE_BASELINE']['run']
+        blank_spectrum.remove_baseline(**blank_params_log['REMOVE_BASELINE'])
+    if blank_params_log['NORMALIZE_INTENSITY']['run']:
+        del blank_params_log['NORMALIZE_INTENSITY']['run']
+        blank_spectrum.normalize_intensity(**blank_params_log['NORMALIZE_INTENSITY'])
+    if blank_params_log['BIN_SPECTRUM']['run']:
+        del blank_params_log['BIN_SPECTRUM']['run']
+        blank_spectrum.bin_spectrum(**blank_params_log['BIN_SPECTRUM'])
+    # peak picking
+    blank_spectrum.peak_picking(**blank_params_log['PEAK_PICKING'])
+    fig = get_spectrum(blank_spectrum)
     cleanup_file_system_backend()
     return fig, Serverside(fig)
 
@@ -468,9 +514,6 @@ def clear_exclusion_list(n_clicks):
     """
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'clear_exclusion_list.n_clicks':
-        # undo preprocessing
-        for key, spectrum in INDEXED_DATA.items():
-            spectrum.undo_all_processing()
         return pd.DataFrame(columns=['m/z']).to_dict('records'), {'margin': '20px', 'display': 'none'}
 
 
@@ -1066,13 +1109,15 @@ def toggle_peak_picking_deisotope_parameters(n_clicks, value):
                Output('preview_id', 'options'),
                Output('preview_id', 'value'),
                Output('preview_figure', 'figure'),
-               Output('store_sample_params_log', 'data')],
+               Output('store_sample_params_log', 'data'),
+               Output('store_precursor_data', 'data')],
               [Input('preview_precursor_list', 'n_clicks'),
                Input('preview_precursor_list_modal_back', 'n_clicks'),
                Input('preview_precursor_list_modal_run', 'n_clicks'),
                Input('store_preprocessing_params', 'data'),
                Input('store_blank_spots', 'data'),
-               Input('store_spot_groups', 'data')],
+               Input('store_spot_groups', 'data'),
+               Input('store_indexed_data', 'data')],
               [State('preview_precursor_list_modal', 'is_open'),
                State('exclusion_list', 'data')])
 def preview_precursor_list(n_clicks_preview,
@@ -1081,6 +1126,7 @@ def preview_precursor_list(n_clicks_preview,
                            preprocessing_params,
                            blank_spots,
                            spot_groups,
+                           indexed_data,
                            is_open,
                            exclusion_list):
     """
@@ -1094,51 +1140,57 @@ def preview_precursor_list(n_clicks_preview,
     :param preprocessing_params: Input signal containing data from store_preprocessing_params.
     :param blank_spots: Input signal containing data from store_blank_spots.
     :param spot_groups: Input signal containing data from store_spot_groups.
+    :param indexed_data: Input signal containing data from store_indexed_data.
     :param is_open: State signal to determine whether the preview_precursor_list_modal modal window is open
     :param exclusion_list: State signal to provide the current exclusion list data.
     :return: Tuple of output signal to determine whether the preview_precursor_list_modal modal window is open, the
         list of spectra IDs to populate the dropdown menu options, the list of spectra IDs to populate the dropdown
         menu values, and a blank figure to serve as a placeholder in the modal window body.
     """
-    global INDEXED_DATA
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'preview_precursor_list.n_clicks':
+        spectra = {}
+        precursor_data = {}
+        for spot in indexed_data.keys():
+            if spot not in blank_spots['spots']:
+                data = import_timstof_raw_data(indexed_data[spot], mode='profile')
+                spectra[spot] = [spectrum for spectrum in data if spectrum.coord == spot][0]
         params = copy.deepcopy(preprocessing_params)
         sample_params_log = copy.deepcopy(params)
         # preprocessing
         if params['TRIM_SPECTRUM']['run']:
             del params['TRIM_SPECTRUM']['run']
-            for key, spectrum in INDEXED_DATA.items():
+            for key, spectrum in spectra.items():
                 spectrum.trim_spectrum(**params['TRIM_SPECTRUM'])
         if params['TRANSFORM_INTENSITY']['run']:
             del params['TRANSFORM_INTENSITY']['run']
-            for key, spectrum in INDEXED_DATA.items():
+            for key, spectrum in spectra.items():
                 spectrum.transform_intensity(**params['TRANSFORM_INTENSITY'])
         if params['SMOOTH_BASELINE']['run']:
             del params['SMOOTH_BASELINE']['run']
-            for key, spectrum in INDEXED_DATA.items():
+            for key, spectrum in spectra.items():
                 spectrum.smooth_baseline(**params['SMOOTH_BASELINE'])
         if params['REMOVE_BASELINE']['run']:
             del params['REMOVE_BASELINE']['run']
-            for key, spectrum in INDEXED_DATA.items():
+            for key, spectrum in spectra.items():
                 spectrum.remove_baseline(**params['REMOVE_BASELINE'])
         if params['NORMALIZE_INTENSITY']['run']:
             del params['NORMALIZE_INTENSITY']['run']
-            for key, spectrum in INDEXED_DATA.items():
+            for key, spectrum in spectra.items():
                 spectrum.normalize_intensity(**params['NORMALIZE_INTENSITY'])
         if params['BIN_SPECTRUM']['run']:
             del params['BIN_SPECTRUM']['run']
-            for key, spectrum in INDEXED_DATA.items():
+            for key, spectrum in spectra.items():
                 spectrum.bin_spectrum(**params['BIN_SPECTRUM'])
         # peak picking
-        for key, spectrum in INDEXED_DATA.items():
+        for key, spectrum in spectra.items():
             spectrum.peak_picking(**params['PEAK_PICKING'])
         # groups have been defined
         if len(spot_groups.keys()) > 0:
             # process groups
             spots_in_group = [i for value in spot_groups.values() for i in value]
             for group, list_of_spots in spot_groups.items():
-                group_spectra = [INDEXED_DATA[spot] for spot in list_of_spots]
+                group_spectra = [spectra[spot] for spot in list_of_spots]
                 group_feature_matrix = get_feature_matrix(group_spectra, missing_value_imputation=False)
                 group_feature_matrix.to_csv('C:\\Users\\bass\\data\\group_feature_matrix.csv')
                 group_consensus_df = pd.DataFrame(data={'m/z': np.unique(group_feature_matrix['mz'].values),
@@ -1184,19 +1236,22 @@ def preview_precursor_list(n_clicks_preview,
                         feature_dict[spot]['intensity'].append(intensity)
                         feature_dict[spot]['index'].append(int(array_index))
                 for spot in list_of_spots:
-                    INDEXED_DATA[spot].peak_picked_mz_array = None
-                    INDEXED_DATA[spot].peak_picked_intensity_array = None
-                    INDEXED_DATA[spot].peak_picking_indices = None
+                    spectra[spot].peak_picked_mz_array = None
+                    spectra[spot].peak_picked_intensity_array = None
+                    spectra[spot].peak_picking_indices = None
                 for spot, values in feature_dict.items():
-                    INDEXED_DATA[spot].peak_picked_mz_array = np.array(values['mz'])
-                    INDEXED_DATA[spot].peak_picked_intensity_array = np.array(values['intensity'])
-                    INDEXED_DATA[spot].peak_picking_indices = np.array(values['index'])
+                    spectra[spot].peak_picked_mz_array = np.array(values['mz'])
+                    spectra[spot].peak_picked_intensity_array = np.array(values['intensity'])
+                    spectra[spot].peak_picking_indices = np.array(values['index'])
+                    precursor_data[spot]['peak_picked_mz_array'] = copy.deepcopy(spectra[spot].peak_picked_mz_array)
+                    precursor_data[spot]['peak_picked_intensity_array'] = copy.deepcopy(spectra[spot].peak_picked_intensity_array)
+                    precursor_data[spot]['peak_picking_indices'] = copy.deepcopy(spectra[spot].peak_picking_indices)
             # process all other spots not found in a group
             # remove peaks found in exclusion list
             if params['PRECURSOR_SELECTION']['use_exclusion_list']:
                 exclusion_list = pd.DataFrame(exclusion_list)
                 if not exclusion_list.empty:
-                    for key, spectrum in INDEXED_DATA.items():
+                    for key, spectrum in spectra.items():
                         if key not in spots_in_group:
                             spectrum_df = pd.DataFrame(data={'m/z': spectrum.peak_picked_mz_array,
                                                              'Intensity': spectrum.peak_picked_intensity_array,
@@ -1213,19 +1268,22 @@ def preview_precursor_list(n_clicks_preview,
                             spectrum.peak_picked_intensity_array = merged_df['Intensity'].values
                             spectrum.peak_picking_indices = merged_df['Indices'].values
             # subset peak picked peaks to only include top n peaks
-            for key, spectrum in INDEXED_DATA.items():
+            for key, spectrum in spectra.items():
                 if key not in spots_in_group:
                     top_n_indices = np.argsort(spectrum.peak_picked_intensity_array)[::-1][:params['PRECURSOR_SELECTION']['top_n']]
                     spectrum.peak_picked_mz_array = spectrum.peak_picked_mz_array[top_n_indices]
                     spectrum.peak_picked_intensity_array = spectrum.peak_picked_intensity_array[top_n_indices]
                     spectrum.peak_picking_indices = spectrum.peak_picking_indices[top_n_indices]
+                    precursor_data[key]['peak_picked_mz_array'] = copy.deepcopy(spectrum.peak_picked_mz_array)
+                    precursor_data[key]['peak_picked_intensity_array'] = copy.deepcopy(spectrum.peak_picked_intensity_array)
+                    precursor_data[key]['peak_picking_indices'] = copy.deepcopy(spectrum.peak_picking_indices)
         # no groups defined
         else:
             # remove peaks found in exclusion list
             if params['PRECURSOR_SELECTION']['use_exclusion_list']:
                 exclusion_list = pd.DataFrame(exclusion_list)
                 if not exclusion_list.empty:
-                    for key, spectrum in INDEXED_DATA.items():
+                    for key, spectrum in spectra.items():
                         spectrum_df = pd.DataFrame(data={'m/z': spectrum.peak_picked_mz_array,
                                                          'Intensity': spectrum.peak_picked_intensity_array,
                                                          'Indices': spectrum.peak_picking_indices})
@@ -1240,41 +1298,71 @@ def preview_precursor_list(n_clicks_preview,
                         spectrum.peak_picked_intensity_array = merged_df['Intensity'].values
                         spectrum.peak_picking_indices = merged_df['Indices'].values
             # subset peak picked peaks to only include top n peaks
-            for key, spectrum in INDEXED_DATA.items():
+            for key, spectrum in spectra.items():
                 top_n_indices = np.argsort(spectrum.peak_picked_intensity_array)[::-1][:params['PRECURSOR_SELECTION']['top_n']]
                 spectrum.peak_picked_mz_array = spectrum.peak_picked_mz_array[top_n_indices]
                 spectrum.peak_picked_intensity_array = spectrum.peak_picked_intensity_array[top_n_indices]
                 spectrum.peak_picking_indices = spectrum.peak_picking_indices[top_n_indices]
+                precursor_data[key]['peak_picked_mz_array'] = copy.deepcopy(spectrum.peak_picked_mz_array)
+                precursor_data[key]['peak_picked_intensity_array'] = copy.deepcopy(spectrum.peak_picked_intensity_array)
+                precursor_data[key]['peak_picking_indices'] = copy.deepcopy(spectrum.peak_picking_indices)
         # populate dropdown menu
-        dropdown_options = [{'label': i, 'value': i} for i in INDEXED_DATA.keys() if i not in blank_spots['spots']]
-        dropdown_value = [i for i in INDEXED_DATA.keys() if i not in blank_spots['spots']]
-        return not is_open, dropdown_options, dropdown_value, blank_figure(), sample_params_log
+        dropdown_options = [{'label': i, 'value': i} for i in indexed_data.keys() if i not in blank_spots['spots']]
+        dropdown_value = [i for i in indexed_data.keys() if i not in blank_spots['spots']]
+        return not is_open, dropdown_options, dropdown_value, blank_figure(), sample_params_log, precursor_data
     if changed_id == 'preview_precursor_list_modal_back.n_clicks':
-        for key, spectrum in INDEXED_DATA.items():
-            spectrum.undo_all_processing()
-        return not is_open, [], [], blank_figure(), {}
+        return not is_open, [], [], blank_figure(), {}, {}
     if changed_id == 'preview_precursor_list_modal_run.n_clicks':
-        return not is_open, [], [], blank_figure(), {}
-    return is_open, [], [], blank_figure(), {}
+        return not is_open, [], [], blank_figure(), {}, {}
+    return is_open, [], [], blank_figure(), {}, {}
 
 
 @app.callback([Output('preview_figure', 'figure'),
                Output('store_plot', 'data')],
-              Input('preview_id', 'value'))
-def update_preview_spectrum(value):
+              [Input('preview_id', 'value'),
+               Input('store_indexed_data', 'data'),
+               Input('store_sample_params_log', 'data'),
+               Input('store_precursor_data', 'data')])
+def update_preview_spectrum(value, indexed_data, sample_params_log, precursor_data):
     """
     Dash callback to plot the spectrum selected from the preview_id dropdown using plotly.express and
     plotly_resampler.FigureResampler.
 
-    :param value: Input signal preview_id used as the key in INDEXED_DATA.
+    :param value: Input signal preview_id used as the key in store_indexed_data.
+    :param indexed_data: Input signal containing data from store_indexed_data.
+    :param sample_params_log: Input signal containing data from store_sample_params_log.
+    :param precursor_data: Input signal containing data from store_precursor_data.
     :return: Tuple of spectrum figure as a plotly.express.line plot and data store for plotly_resampler.
     """
-    global INDEXED_DATA
-    if INDEXED_DATA[value].peak_picking_indices is None:
+    data = import_timstof_raw_data(indexed_data[value], mode='profile')
+    spectrum = [i for i in data if i.coord == value][0]
+    # preprocessing
+    if sample_params_log['TRIM_SPECTRUM']['run']:
+        del sample_params_log['TRIM_SPECTRUM']['run']
+        spectrum.trim_spectrum(**sample_params_log['TRIM_SPECTRUM'])
+    if sample_params_log['TRANSFORM_INTENSITY']['run']:
+        del sample_params_log['TRANSFORM_INTENSITY']['run']
+        spectrum.transform_intensity(**sample_params_log['TRANSFORM_INTENSITY'])
+    if sample_params_log['SMOOTH_BASELINE']['run']:
+        del sample_params_log['SMOOTH_BASELINE']['run']
+        spectrum.smooth_baseline(**sample_params_log['SMOOTH_BASELINE'])
+    if sample_params_log['REMOVE_BASELINE']['run']:
+        del sample_params_log['REMOVE_BASELINE']['run']
+        spectrum.remove_baseline(**sample_params_log['REMOVE_BASELINE'])
+    if sample_params_log['NORMALIZE_INTENSITY']['run']:
+        del sample_params_log['NORMALIZE_INTENSITY']['run']
+        spectrum.normalize_intensity(**sample_params_log['NORMALIZE_INTENSITY'])
+    if sample_params_log['BIN_SPECTRUM']['run']:
+        del sample_params_log['BIN_SPECTRUM']['run']
+        spectrum.bin_spectrum(**sample_params_log['BIN_SPECTRUM'])
+    spectrum.peak_picked_mz_array = copy.deepcopy(precursor_data[value]['peak_picked_mz_array'])
+    spectrum.peak_picked_intensity_array = copy.deepcopy(precursor_data[value]['peak_picked_intensity_array'])
+    spectrum.peak_picking_indices = copy.deepcopy(precursor_data[value]['peak_picking_indices'])
+    if spectrum.peak_picking_indices is None:
         label_peaks = False
     else:
         label_peaks = True
-    fig = get_spectrum(INDEXED_DATA[value], label_peaks)
+    fig = get_spectrum(spectrum, label_peaks)
     cleanup_file_system_backend()
     return fig, Serverside(fig)
 
@@ -1287,7 +1375,8 @@ def update_preview_spectrum(value):
                Input('store_sample_params_log', 'data'),
                Input('store_autox_seq', 'data'),
                Input('store_autox_path_dict', 'data'),
-               Input('store_blank_spots', 'data')],
+               Input('store_blank_spots', 'data'),
+               Input('store_precursor_data', 'data')],
               [State('run_modal', 'is_open'),
                State('run_success_modal', 'is_open'),
                State('run_output_directory_value', 'value'),
@@ -1295,8 +1384,8 @@ def update_preview_spectrum(value):
                State('run_method_checkbox', 'value'),
                State('exclusion_list', 'data')])
 def toggle_run_modal(preview_run_n_clicks, run_n_clicks, blank_params_log, sample_params_log, autox_seq,
-                     autox_path_dict, blank_spots, run_is_open, success_is_open, outdir, method, method_checkbox,
-                     exclusion_list):
+                     autox_path_dict, blank_spots, precursor_data, run_is_open, success_is_open, outdir, method,
+                     method_checkbox, exclusion_list):
     """
     Dash callback to toggle the run_modal modal window and create the new MS/MS AutoXecute sequence. A new modal window
     displaying a success message and the output directory of the resulting AutoXecute sequence will be shown upon
@@ -1309,6 +1398,7 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, blank_params_log, sampl
     :param autox_seq: Input signal containing data from store_autox_seq.
     :param autox_path_dict: Input signal containing data from store_autox_path_dict.
     :param blank_spots: Input signal containing data from store_blank_spots.
+    :param precursor_data: Input signal containing data from store_precursor_data.
     :param run_is_open: State signal to determine whether the run_modal modal window is open.
     :param success_is_open: State signal to determine whether the run_success_modal modal window is open.
     :param outdir: Path to folder in which to write the output AutoXecute sequence. Will also be used as the directory
@@ -1324,7 +1414,6 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, blank_params_log, sampl
     if changed_id == 'preview_precursor_list_modal_run.n_clicks':
         return not run_is_open, success_is_open
     if changed_id == 'run_button.n_clicks':
-        global INDEXED_DATA
         log = 'fleX MS/MS AutoXecute Generator Log\n\n'
         log += f'Output Directory: {outdir}\n\n'
         ms1_autox = et.parse(autox_seq).getroot()
@@ -1334,8 +1423,8 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, blank_params_log, sampl
             log += f"Spot Group: {spot_group.attrib['sampleName']}\n"
             for cont in spot_group:
                 if cont.attrib['Pos_on_Scout'] not in blank_spots['spots'] and \
-                        INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_mz_array is not None and \
-                        INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_intensity_array is not None:
+                        precursor_data[cont.attrib['Pos_on_Scout']]['peak_picked_mz_array'] is not None and \
+                        precursor_data[cont.attrib['Pos_on_Scout']]['peak_picked_intensity_array'] is not None:
                     new_spot_group = et.SubElement(new_autox, spot_group.tag, attrib=spot_group.attrib)
                     new_spot_group.attrib['sampleName'] = f"{new_spot_group.attrib['sampleName']}_{cont.attrib['Pos_on_Scout']}_MSMS"
                     if method_checkbox and os.path.exists(method):
@@ -1349,8 +1438,8 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, blank_params_log, sampl
                                 [value['method_path']
                                  for key, value in autox_path_dict.items()
                                  if value['sample_name'] == spot_group.attrib['sampleName']][0] + '\n')
-                    top_n_peaks = pd.DataFrame({'m/z': INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_mz_array,
-                                                'Intensity': INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_intensity_array})
+                    top_n_peaks = pd.DataFrame({'m/z': precursor_data[cont.attrib['Pos_on_Scout']]['peak_picked_mz_array'],
+                                                'Intensity': precursor_data[cont.attrib['Pos_on_Scout']]['peak_picked_intensity_array']})
                     top_n_peaks = top_n_peaks.sort_values(by='Intensity', ascending=True).round(4)
                     top_n_peaks = top_n_peaks.drop_duplicates(subset='m/z')
                     top_n_peaks = top_n_peaks['m/z'].values.tolist()

@@ -1224,7 +1224,7 @@ def get_preview_layout():
     ]
 
 
-def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox):
+def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox_seq):
     """
     Obtain the main dashboard layout.
 
@@ -1232,9 +1232,10 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox):
     :param plate_format: Plate geometry used to generate the plate map table.
     :param autox_path_dict: Nested dictionary containing spot group sample names, data paths, and method paths from the
         .run file.
-    :param autox: AutoXecute sequence file loaded as an XML tree.
+    :param autox_seq: AutoXecute sequence file path.
     :return: Div containing the main dashboard layout.
     """
+    autox = et.parse(autox_seq).getroot()
     outdir = autox.attrib['directory']
     plate_map_df = get_plate_map(plate_format)
     plate_map_legend_df = get_plate_map_legend()
@@ -1334,15 +1335,15 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox):
             ),
             dcc.Loading(
                 dcc.Store(id='store_autox_seq',
-                          data=get_autox_sequence_filename())
+                          data=autox_seq)
             ),
             dcc.Loading(
                 dcc.Store(id='store_plate_format',
-                          data=get_geometry_format(et.parse(get_autox_sequence_filename()).getroot()))
+                          data=get_geometry_format(et.parse(autox_seq).getroot()))
             ),
             dcc.Loading(
                 dcc.Store(id='store_autox_path_dict',
-                          data=get_autox_path_dict())
+                          data=get_autox_path_dict(autox_seq))
             ),
             dcc.Loading(
                 dcc.Store(id='store_blank_spots',
@@ -1354,6 +1355,10 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox):
             ),
             dcc.Loading(
                 dcc.Store(id='store_indexed_data',
+                          data={})
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_precursor_data',
                           data={})
             ),
             dbc.Modal(

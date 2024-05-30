@@ -122,11 +122,11 @@ def get_maldi_dda_preprocessing_params():
             'PRECURSOR_SELECTION': precursor_selection_params}
 
 
-def get_autox_path_dict():
+def get_autox_path_dict(autox_seq):
     return {index: {'sample_name': spot_group.attrib['sampleName'],
-                    'raw_data_path': f"{os.path.join(et.parse(get_autox_sequence_filename()).getroot().attrib['directory'], spot_group.attrib['sampleName'])}.d",
+                    'raw_data_path': f"{os.path.join(et.parse(autox_seq).getroot().attrib['directory'], spot_group.attrib['sampleName'])}.d",
                     'method_path': spot_group.attrib['acqMethod']}
-            for index, spot_group in enumerate(et.parse(get_autox_sequence_filename()).getroot())}
+            for index, spot_group in enumerate(et.parse(autox_seq).getroot())}
 
 
 def get_geometry_files(geometry_path):
