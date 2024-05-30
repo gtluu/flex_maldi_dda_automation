@@ -13,76 +13,41 @@ import dash_bootstrap_components as dbc
 from plotly_resampler import FigureResampler
 
 # TODO: figure out Dash data store instead of using all these global vars
-# default processing parameters from config file
-PREPROCESSING_PARAMS = get_preprocessing_params()
-PREPROCESSING_PARAMS['TRIM_SPECTRUM']['run'] = False
-PREPROCESSING_PARAMS['TRANSFORM_INTENSITY']['run'] = False
-PREPROCESSING_PARAMS['SMOOTH_BASELINE']['run'] = False
-PREPROCESSING_PARAMS['REMOVE_BASELINE']['run'] = False
-PREPROCESSING_PARAMS['NORMALIZE_INTENSITY']['run'] = False
-PREPROCESSING_PARAMS['BIN_SPECTRUM']['run'] = False
-"""config = configparser.ConfigParser()
-config.read(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'etc', 'preprocessing.cfg'))
-PREPROCESSING_PARAMS['ALIGN_SPECTRA'] = {'run': False,
-                                         'method': config['align_spectra']['method'],
-                                         'inter': config['align_spectra']['inter'],
-                                         'n': config['align_spectra']['n'],
-                                         'scale': None,
-                                         'coshift_preprocessing': config['align_spectra'].getboolean(
-                                             'coshift_preprocessing'),
-                                         'coshift_preprocessing_max_shift': None,
-                                         'fill_with_previous': config['align_spectra'].getboolean('fill_with_previous'),
-                                         'average2_multiplier': int(config['align_spectra']['average2_multiplier'])}"""
-PREPROCESSING_PARAMS['PRECURSOR_SELECTION'] = {'top_n': 10,
-                                               'use_exclusion_list': True,
-                                               'exclusion_list_tolerance': 0.05}
-# Copies of PREPROCESSING_PARAMS for logging
-BLANK_PARAMS_LOG = {}
-SAMPLE_PARAMS_LOG = {}
 
-# get AutoXecute sequence path
-AUTOX_SEQ = get_autox_sequence_filename()
-
-# read in AutoXecute sequence
-MS1_AUTOX = et.parse(AUTOX_SEQ).getroot()
-# parse plate map
-PLATE_FORMAT = get_geometry_format(MS1_AUTOX)
 # parse raw data and method paths
-AUTOX_PATH_DICT = {index: {'sample_name': spot_group.attrib['sampleName'],
-                           'raw_data_path': f"{os.path.join(MS1_AUTOX.attrib['directory'], spot_group.attrib['sampleName'])}.d",
-                           'method_path': spot_group.attrib['acqMethod']}
-                   for index, spot_group in enumerate(MS1_AUTOX)}
 
 INDEXED_DATA = {}
-BLANK_SPOTS = []
-SPOT_GROUPS = {}
 
 app = DashProxy(prevent_initial_callbacks=True,
                 transforms=[MultiplexerTransform(),
                             ServersideOutputTransform(backends=[FileSystemBackend(cache_dir=FILE_SYSTEM_BACKEND)])],
                 external_stylesheets=[dbc.themes.BOOTSTRAP])
-app.layout = get_dashboard_layout(PREPROCESSING_PARAMS, PLATE_FORMAT, AUTOX_PATH_DICT, MS1_AUTOX)
+app.layout = get_dashboard_layout(get_maldi_dda_preprocessing_params(),
+                                  get_geometry_format(et.parse(get_autox_sequence_filename()).getroot()),
+                                  get_autox_path_dict(),
+                                  et.parse(get_autox_sequence_filename()).getroot())
 
 
 @app.callback([Output({'type': 'raw_data_path_input', 'index': MATCH}, 'value'),
                Output({'type': 'raw_data_path_input', 'index': MATCH}, 'valid'),
                Output({'type': 'raw_data_path_input', 'index': MATCH}, 'invalid')],
               [Input({'type': 'raw_data_path_button', 'index': MATCH}, 'n_clicks'),
-               Input({'type': 'raw_data_path_button', 'index': MATCH}, 'id')])
-def update_raw_data_path(n_clicks, button_id):
+               Input({'type': 'raw_data_path_button', 'index': MATCH}, 'id'),
+               Input('store_autox_path_dict', 'data')])
+def update_raw_data_path(n_clicks, button_id, autox_path_dict):
     """
     Dash callback to update the raw data path during AutoXecute sequence data path validation.
 
     :param n_clicks: Input signal when a given raw_data_path_button button is clicked.
     :param button_id: ID of the raw_data_path_button clicked.
+    :param autox_path_dict: Input signal containing data from autox_path_dict.
     :return: Tuple of the updated Bruker .d directory path, whether the path is valid, and whether the path is invalid.
     """
-    global AUTOX_PATH_DICT
     dirname = get_path_name()
     if (dirname.endswith('.d') and
             os.path.exists(dirname) and
-            os.path.splitext(os.path.split(dirname)[-1])[0] == AUTOX_PATH_DICT[button_id['index']]['sample_name']):
-        AUTOX_PATH_DICT[button_id['index']]['raw_data_path'] = dirname
+            os.path.splitext(os.path.split(dirname)[-1])[0] == autox_path_dict[button_id['index']]['sample_name']):
+        autox_path_dict[button_id['index']]['raw_data_path'] = dirname
         return dirname, True, False
     else:
         return dirname, False, True
@@ -92,19 +57,20 @@ def update_raw_data_path(n_clicks, button_id):
                Output({'type': 'method_path_input', 'index': MATCH}, 'valid'),
                Output({'type': 'method_path_input', 'index': MATCH}, 'invalid')],
               [Input({'type': 'method_path_button', 'index': MATCH}, 'n_clicks'),
-               Input({'type': 'method_path_button', 'index': MATCH}, 'id')])
-def update_method_path(n_clicks, button_id):
+               Input({'type': 'method_path_button', 'index': MATCH}, 'id'),
+               Input('store_autox_path_dict', 'data')])
+def update_method_path(n_clicks, button_id, autox_path_dict):
     """
     Dash callback to update the method path during AutoXecute sequence method path validation.
 
     :param n_clicks: Input signal when a given method_path_button button is clicked.
     :param button_id: ID of the method_path_button clicked.
+    :param autox_path_dict: Input signal containing data from autox_path_dict.
     :return: Tuple of the updated Bruker .m directory path, whether the path is valid, and whether the path is invalid.
     """
-    global AUTOX_PATH_DICT
     dirname = get_path_name()
     if dirname.endswith('.m') and os.path.exists(dirname):
-        AUTOX_PATH_DICT[button_id['index']]['method_path'] = dirname
+        autox_path_dict[button_id['index']]['method_path'] = dirname
         return dirname, True, False
     else:
         return dirname, False, True
@@ -149,10 +115,13 @@ def toggle_autox_validation_modal_close(n_clicks, raw_data_path_input, raw_data_
                Output('new_group_name_modal_input_value', 'value'),
                Output('plate_map', 'selected_cells'),
                Output('plate_map', 'active_cell'),
-               Output('group_spots_error_modal', 'is_open')],
+               Output('group_spots_error_modal', 'is_open'),
+               Output('store_spot_groups', 'data')],
               [Input('group_spots', 'n_clicks'),
                Input('new_group_name_modal_save', 'n_clicks'),
-               Input('group_spots_error_modal_close', 'n_clicks')],
+               Input('group_spots_error_modal_close', 'n_clicks'),
+               Input('store_blank_spots', 'data'),
+               Input('store_spot_groups', 'data')],
               [State('plate_map', 'selected_cells'),
                State('plate_map', 'style_data_conditional'),
                State('plate_map', 'data'),
@@ -162,24 +131,30 @@ def toggle_autox_validation_modal_close(n_clicks, raw_data_path_input, raw_data_
                State('new_group_name_modal_input_value', 'valid'),
                State('new_group_name_modal', 'is_open'),
                State('group_spots_error_modal', 'is_open')])
-def group_spots(n_clicks_group_spots, n_clicks_new_group_name_modal_save, n_clicks_group_spots_error_modal_close, spots,
-                plate_map_cell_style, plate_map_data, plate_map_legend_cell_style, plate_map_legend_data,
-                new_group_name, new_group_name_valid, new_group_name_modal_is_open,
+def group_spots(n_clicks_group_spots, n_clicks_new_group_name_modal_save, n_clicks_group_spots_error_modal_close,
+                blank_spots, spot_groups, spots, plate_map_cell_style, plate_map_data, plate_map_legend_cell_style,
+                plate_map_legend_data, new_group_name, new_group_name_valid, new_group_name_modal_is_open,
                 group_name_spots_error_modal_is_open):
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
-    global BLANK_SPOTS
-    global SPOT_GROUPS
     if changed_id == 'group_spots.n_clicks':
         if spots:
             error = False
             for spot in spots:
                 spot = plate_map_data[spot['row']][spot['column_id']]
-                if spot in BLANK_SPOTS or spot in [i for value in SPOT_GROUPS.values() for i in value]:
+                if spot in blank_spots['spots'] or spot in [i for value in spot_groups.values() for i in value]:
                     error = True
             if not error:
                 return plate_map_cell_style, plate_map_legend_cell_style, plate_map_legend_data, not new_group_name_modal_is_open, '', spots, None, group_name_spots_error_modal_is_open
             elif error:
-                return plate_map_cell_style, plate_map_legend_cell_style, plate_map_legend_data, new_group_name_modal_is_open, '', spots, None, not group_name_spots_error_modal_is_open
+                return (plate_map_cell_style,
+                        plate_map_legend_cell_style,
+                        plate_map_legend_data,
+                        new_group_name_modal_is_open,
+                        '',
+                        spots,
+                        None,
+                        not group_name_spots_error_modal_is_open,
+                        spot_groups)
     elif changed_id == 'new_group_name_modal_save.n_clicks' and new_group_name_valid and \
             new_group_name not in pd.DataFrame(plate_map_legend_data)['Category'].values.tolist():
         gray_indices = [(style_dict['if']['row_index'], style_dict['if']['column_id'])
@@ -189,7 +164,7 @@ def group_spots(n_clicks_group_spots, n_clicks_new_group_name_modal_save, n_clic
                         if 'row_index' in style_dict['if'].keys() and 'column_id' in style_dict['if'].keys()]
         indices = [(i['row'], i['column_id']) for i in spots]
         indices = [i for i in indices if i not in gray_indices]
-        SPOT_GROUPS[new_group_name] = [plate_map_data[i[0]][i[1]] for i in indices]
+        spot_groups[new_group_name] = [plate_map_data[i[0]][i[1]] for i in indices]
         color = get_rgb_color()
         plate_map_cell_style = plate_map_cell_style + [{'if': {'row_index': row, 'column_id': col},
                                                         'backgroundColor': color, 'color': 'white'}
@@ -198,11 +173,35 @@ def group_spots(n_clicks_group_spots, n_clicks_new_group_name_modal_save, n_clic
                                          pd.DataFrame({'Category': [new_group_name]})], ignore_index=True)
         plate_map_legend_cell_style = plate_map_legend_cell_style + [{'if': {'row_index': plate_map_legend_df.shape[0]-1},
                                                                       'backgroundColor': color, 'color': 'white'}]
-        return plate_map_cell_style, plate_map_legend_cell_style, plate_map_legend_df.to_dict('records'), not new_group_name_modal_is_open, '', [], None, group_name_spots_error_modal_is_open
+        return (plate_map_cell_style,
+                plate_map_legend_cell_style,
+                plate_map_legend_df.to_dict('records'),
+                not new_group_name_modal_is_open,
+                '',
+                [],
+                None,
+                group_name_spots_error_modal_is_open,
+                spot_groups)
     elif changed_id == 'group_spots_error_modal_close.n_clicks':
-        return plate_map_cell_style, plate_map_legend_cell_style, plate_map_legend_data, new_group_name_modal_is_open, '', spots, None, not group_name_spots_error_modal_is_open
+        return (plate_map_cell_style,
+                plate_map_legend_cell_style,
+                plate_map_legend_data,
+                new_group_name_modal_is_open,
+                '',
+                spots,
+                None,
+                not group_name_spots_error_modal_is_open,
+                spot_groups)
     else:
-        return plate_map_cell_style, plate_map_legend_cell_style, plate_map_legend_data, new_group_name_modal_is_open, '', [], None, group_name_spots_error_modal_is_open
+        return (plate_map_cell_style,
+                plate_map_legend_cell_style,
+                plate_map_legend_data,
+                new_group_name_modal_is_open,
+                '',
+                [],
+                None,
+                group_name_spots_error_modal_is_open,
+                spot_groups)
 
 
 @app.callback([Output('new_group_name_modal_input_value', 'valid'),
@@ -219,33 +218,38 @@ def check_if_new_group_name_valid(input_value, state_value, plate_map_legend_dat
 @app.callback([Output('plate_map', 'style_data_conditional'),
                Output('plate_map', 'selected_cells'),
                Output('plate_map', 'active_cell'),
-               Output('group_spots_error_modal', 'is_open')],
+               Output('group_spots_error_modal', 'is_open'),
+               Output('store_blank_spots', 'data')],
               [Input('mark_spot_as_blank', 'n_clicks'),
-               Input('group_spots_error_modal_close', 'n_clicks')],
+               Input('group_spots_error_modal_close', 'n_clicks'),
+               Input('store_blank_spots', 'data'),
+               Input('store_spot_groups', 'data')],
               [State('plate_map', 'selected_cells'),
                State('plate_map', 'style_data_conditional'),
                State('plate_map', 'data'),
                State('group_spots_error_modal', 'is_open')])
-def mark_spots_as_blank(n_clicks_mark_spot_as_blank, n_clicks_group_spots_error_modal_close, spots, cell_style, data,
-                        is_open):
+def mark_spots_as_blank(n_clicks_mark_spot_as_blank, n_clicks_group_spots_error_modal_close, blank_spots, spot_groups,
+                        spots, cell_style, data, is_open):
     """
     Dash callback to mark a selected spot in the plate map as a 'blank' spot by changing the cell style and adding the
-    cell ID to the global variable BLANK_SPOTS.
+    cell ID to the dcc.Store store_blank_spots.
 
-    :param n_clicks: Input signal if the mark_spot_as_blank button is clicked.
+    :param n_clicks_mark_spot_as_blank: Input signal if the mark_spot_as_blank button is clicked.
+    :param n_clicks_group_spots_error_modal_close: Input signal if the group_spots_error_modal_close button is clicked.
+    :param blank_spots: Input signal containing data from store_blank_spots.
+    :param spot_groups: Input signal containing data from store_spot_groups.
     :param spots: Currently selected cells in the plate map.
     :param cell_style: Current style of the selected cells in the plate map.
     :param data: State signal containing plate map data.
+    :param is_open: State signal to determine whether the group_spots_error_modal window is open.
     :return: Style data with the updated blank spot style for the selected cells appended.
     """
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
-    global BLANK_SPOTS
-    global SPOT_GROUPS
     if changed_id == 'mark_spot_as_blank.n_clicks':
         error = False
         for spot in spots:
             spot = data[spot['row']][spot['column_id']]
-            if spot in BLANK_SPOTS or spot in [i for value in SPOT_GROUPS.values() for i in value]:
+            if spot in blank_spots['spots'] or spot in [i for value in spot_groups.values() for i in value]:
                 error = True
         if not error:
             gray_indices = [(style_dict['if']['row_index'], style_dict['if']['column_id'])
@@ -255,66 +259,74 @@ def mark_spots_as_blank(n_clicks_mark_spot_as_blank, n_clicks_group_spots_error_
                             if 'row_index' in style_dict['if'].keys() and 'column_id' in style_dict['if'].keys()]
             indices = [(i['row'], i['column_id']) for i in spots]
             indices = [i for i in indices if i not in gray_indices]
-            BLANK_SPOTS = BLANK_SPOTS + [data[i[0]][i[1]] for i in indices if data[i[0]][i[1]] not in BLANK_SPOTS]
+            blank_spots = blank_spots['spots'] + [data[i[0]][i[1]]
+                                                  for i in indices
+                                                  if data[i[0]][i[1]] not in blank_spots['spots']]
             return cell_style + [{'if': {'row_index': row, 'column_id': col},
                                   'backgroundColor': 'green', 'color': 'white'}
-                                 for row, col in indices], [], None, is_open
+                                 for row, col in indices], [], None, is_open, blank_spots
         elif error:
-            return cell_style, [], None, not is_open
+            return cell_style, [], None, not is_open, blank_spots
     elif changed_id == 'group_spots_error_modal_close.n_clicks':
-        return cell_style, [], None, not is_open
+        return cell_style, [], None, not is_open, blank_spots
 
 
 @app.callback([Output('plate_map', 'style_data_conditional'),
                Output('plate_map_legend', 'style_data_conditional'),
-               Output('plate_map_legend', 'data')],
-              Input('clear_blanks_and_groups', 'n_clicks'))
-def clear_blanks_and_groups(n_clicks):
+               Output('plate_map_legend', 'data'),
+               Output('store_blank_spots', 'data'),
+               Output('store_spot_groups', 'data')],
+              [Input('clear_blanks_and_groups', 'n_clicks'),
+               Input('store_plate_format', 'data'),
+               Input('store_autox_seq', 'data')])
+def clear_blanks_and_groups(n_clicks, plate_format, autox_seq):
     """
     Dash callback to remove all blank spot and spot group styling from the plate map, remove all blank spot IDs from
-    the global variable BLANK_SPOTS, and remove all spot groups from the global variable SPOT_GROUPS.
+    the dcc.Store store_blank_spots, and remove all spot groups from the dcc.Store store_spot_groups.
 
     :param n_clicks: Input signal if the clear_blank_spots button is clicked.
+    :param plate_format: Input signal containing data from store_plate_format.
+    :param autox_seq: Input signal containing data from store_autox_seq.
     :return: Default style data for the plate map.
     """
-    global BLANK_SPOTS
-    global SPOT_GROUPS
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'clear_blanks_and_groups.n_clicks':
-        BLANK_SPOTS = []
-        SPOT_GROUPS = {}
         for key, spectrum in INDEXED_DATA.items():
             spectrum.undo_all_processing()
-        return (get_plate_map_style(get_plate_map(PLATE_FORMAT), MS1_AUTOX),
+        return (get_plate_map_style(get_plate_map(plate_format), et.parse(autox_seq).getroot()),
                 [{'if': {'row_index': 1},
                   'backgroundColor': 'green', 'color': 'white'},
                  {'if': {'row_index': 2},
                   'backgroundColor': 'gray', 'color': 'white'}],
-                get_plate_map_legend().to_dict('records'))
+                get_plate_map_legend().to_dict('records'),
+                {'spots': []},
+                {})
 
 
 @ app.callback([Output('exclusion_list', 'data'),
-                Output('view_exclusion_list_spectra', 'style')],
-               Input('generate_exclusion_list_from_blank_spots', 'n_clicks'))
-def generate_exclusion_list_from_blank_spots(n_clicks):
+                Output('view_exclusion_list_spectra', 'style'),
+                Output('store_blank_params_log', 'data')],
+               [Input('generate_exclusion_list_from_blank_spots', 'n_clicks'),
+                Input('store_preprocessing_params', 'data'),
+                Input('store_blank_spots', 'data')])
+def generate_exclusion_list_from_blank_spots(n_clicks, preprocessing_params, blank_spots):
     """
     Dash callback to perform preprocessing using parameters defined in the Edit Preprocessing Parameters modal window
     on blank spots marked on the plate map and generate an exclusion list to be displayed in the exclusion list table
     and used during sample precursor selection.
 
     :param n_clicks: Input signal if the generate_exclusion_list_from_blank_spots button is clicked.
-    :return: Tuple of updated exclusion list data table data and style data to make the view_exclusion_list_spectra
-        button visible.
+    :param preprocessing_params: Input signal containing data from store_preprocessing_params.
+    :param blank_spots: Input signal containing data from store_blank_spots.
+    :return: Tuple of updated exclusion list data table data, style data to make the view_exclusion_list_spectra button
+        visible, and data from blank_params_log.
     """
     global INDEXED_DATA
-    global BLANK_SPOTS
-    global PREPROCESSING_PARAMS
-    global BLANK_PARAMS_LOG
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'generate_exclusion_list_from_blank_spots.n_clicks':
-        blank_spectra = [INDEXED_DATA[spot] for spot in BLANK_SPOTS]
-        params = copy.deepcopy(PREPROCESSING_PARAMS)
-        BLANK_PARAMS_LOG = copy.deepcopy(PREPROCESSING_PARAMS)
+        blank_spectra = [INDEXED_DATA[spot] for spot in blank_spots['spots']]
+        params = copy.deepcopy(preprocessing_params)
+        blank_params_log = copy.deepcopy(preprocessing_params)
         # preprocessing
         if params['TRIM_SPECTRUM']['run']:
             del params['TRIM_SPECTRUM']['run']
@@ -340,10 +352,6 @@ def generate_exclusion_list_from_blank_spots(n_clicks):
             del params['BIN_SPECTRUM']['run']
             for spectrum in blank_spectra:
                 spectrum.bin_spectrum(**params['BIN_SPECTRUM'])
-        """# TODO: will need to ensure spectra are binned before alignment
-        if params['ALIGN_SPECTRA']['run']:
-            del params['ALIGN_SPECTRA']['run']
-            blank_spectra = align_spectra(blank_spectra, **params['ALIGN_SPECTRA'])"""
         # peak picking
         for spectrum in blank_spectra:
             spectrum.peak_picking(**params['PEAK_PICKING'])
@@ -351,7 +359,7 @@ def generate_exclusion_list_from_blank_spots(n_clicks):
         blank_feature_matrix = get_feature_matrix(blank_spectra, missing_value_imputation=False)
         # get exclusion list and return as df.to_dict('records')
         exclusion_list_df = pd.DataFrame(data={'m/z': np.unique(blank_feature_matrix['mz'].values)})
-        return exclusion_list_df.to_dict('records'), {'margin': '20px', 'display': 'flex'}
+        return exclusion_list_df.to_dict('records'), {'margin': '20px', 'display': 'flex'}, blank_params_log
 
 
 @app.callback([Output('exclusion_list_blank_spectra_modal', 'is_open'),
@@ -359,14 +367,16 @@ def generate_exclusion_list_from_blank_spots(n_clicks):
                Output('exclusion_list_blank_spectra_id', 'value'),
                Output('exclusion_list_blank_spectra_figure', 'figure')],
               [Input('view_exclusion_list_spectra', 'n_clicks'),
-               Input('exclusion_list_blank_spectra_modal_close', 'n_clicks')],
+               Input('exclusion_list_blank_spectra_modal_close', 'n_clicks'),
+               Input('store_blank_spots', 'data')],
               State('exclusion_list_blank_spectra_modal', 'is_open'))
-def view_exclusion_list_spectra(n_clicks_view, n_clicks_close, is_open):
+def view_exclusion_list_spectra(n_clicks_view, n_clicks_close, blank_spots, is_open):
     """
     Dash callback to view the preprocessed blank spot spectra that were used to generate the exclusion list.
 
     :param n_clicks_view: Input signal if the view_exclusion_list_spectra button is clicked.
     :param n_clicks_close: Input signal if the exclusion_list_blank_spectra_modal_close button is clicked.
+    :param blank_spots: Input signal containing data from store_blank_spots.
     :param is_open: State signal to determine whether the exclusion_list_blank_spectra_modal modal window is open.
     :return: Tuple of the output signal to determine whether the exclusion_list_blank_spectra_modal modal window is
         open, the list of blank spectra IDs to populate the dropdown menu options, the list of blank spectra IDs to
@@ -375,8 +385,8 @@ def view_exclusion_list_spectra(n_clicks_view, n_clicks_close, is_open):
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'view_exclusion_list_spectra.n_clicks':
         # populate dropdown menu
-        dropdown_options = [{'label': i, 'value': i} for i in INDEXED_DATA.keys() if i in BLANK_SPOTS]
-        dropdown_value = [i for i in INDEXED_DATA.keys() if i in BLANK_SPOTS]
+        dropdown_options = [{'label': i, 'value': i} for i in INDEXED_DATA.keys() if i in blank_spots['spots']]
+        dropdown_value = [i for i in INDEXED_DATA.keys() if i in blank_spots['spots']]
         return not is_open, dropdown_options, dropdown_value, blank_figure()
     if changed_id == 'exclusion_list_blank_spectra_modal_close.n_clicks':
         return not is_open, [], [], blank_figure()
@@ -464,7 +474,8 @@ def clear_exclusion_list(n_clicks):
         return pd.DataFrame(columns=['m/z']).to_dict('records'), {'margin': '20px', 'display': 'none'}
 
 
-@app.callback(Output('edit_processing_parameters_modal', 'is_open'),
+@app.callback([Output('edit_processing_parameters_modal', 'is_open'),
+               Output('store_preprocessing_params', 'data')],
               [Input('edit_preprocessing_parameters', 'n_clicks'),
                Input('edit_processing_parameters_save', 'n_clicks'),
                Input('edit_processing_parameters_cancel', 'n_clicks'),
@@ -501,16 +512,6 @@ def clear_exclusion_list(n_clicks):
                Input('bin_spectrum_n_bins_value', 'value'),
                Input('bin_spectrum_lower_mass_range_value', 'value'),
                Input('bin_spectrum_upper_mass_range_value', 'value'),
-               #Input('align_spectra_checkbox', 'value'),
-               #Input('align_spectra_method', 'value'),
-               #Input('align_spectra_inter', 'value'),
-               #Input('align_spectra_inter_nint_value', 'value'),
-               #Input('align_spectra_n', 'value'),
-               #Input('align_spectra_n_integer_value', 'value'),
-               #Input('align_spectra_coshift_preprocessing', 'value'),
-               #Input('align_spectra_coshift_preprocessing_max_shift_value', 'value'),
-               #Input('align_spectra_fill_with_previous', 'value'),
-               #Input('align_spectra_average2_multiplier_value', 'value'),
                Input('peak_picking_method', 'value'),
                Input('peak_picking_snr_value', 'value'),
                Input('peak_picking_widths_value', 'value'),
@@ -530,7 +531,8 @@ def clear_exclusion_list(n_clicks):
                Input('peak_picking_deisotope_add_up_intensity', 'value'),
                Input('precursor_selection_top_n_value', 'value'),
                Input('precursor_selection_use_exclusion_list', 'value'),
-               Input('precursor_selection_exclusion_list_tolerance_value', 'value')],
+               Input('precursor_selection_exclusion_list_tolerance_value', 'value'),
+               Input('store_preprocessing_params', 'data')],
               State('edit_processing_parameters_modal', 'is_open'))
 def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
                                                n_clicks_save,
@@ -568,16 +570,6 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
                                                bin_spectrum_n_bins,
                                                bin_spectrum_lower_mass_range,
                                                bin_spectrum_upper_mass_range,
-                                               #align_spectra_checkbox,
-                                               #align_spectra_method,
-                                               #align_spectra_inter,
-                                               #align_spectra_inter_nint_value,
-                                               #align_spectra_n,
-                                               #align_spectra_n_integer_value,
-                                               #align_spectra_coshift_preprocessing,
-                                               #align_spectra_coshift_preprocessing_max_shift_value,
-                                               #align_spectra_fill_with_previous,
-                                               #align_spectra_average2_multiplier_value,
                                                peak_picking_method,
                                                peak_picking_snr,
                                                peak_picking_widths,
@@ -598,11 +590,12 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
                                                precursor_selection_top_n_value,
                                                precursor_selection_use_exclusion_list,
                                                precursor_selection_exclusion_list_tolerance_value,
+                                               preprocessing_params,
                                                is_open):
     """
     Dash callback to toggle the preprocessing parameters modal window, populate the current preprocessing parameters
-    saved in the global variable PREPROCESSING_PARAMS, and save any modified preprocessing parameters to
-    PREPROCESSING_PARAMS if the Save button is clicked.
+    saved in the dcc.Store store_preprocessing_params, and save any modified preprocessing parameters to
+    store_preprocessing_params if the Save button is clicked.
 
     :param n_clicks_button: Input signal if the edit_preprocessing_parameters button is clicked.
     :param n_clicks_save: Input signal if the edit_preprocessing_parameters_save button is clicked.
@@ -688,85 +681,71 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
     :param precursor_selection_use_exclusion_list: Whether to use exclusion list during precursor selection.
     :param precursor_selection_exclusion_list_tolerance_value: Tolerance in daltons to use when comparing peak lists to
         the exclusion list during peak picking and precursor selection.
+    :param preprocessing_params: Input signal containing data from store_preprocessing_params.
     :param is_open: State signal to determine whether the edit_preprocessing_parameters_modal modal window is open.
-    :return: Output signal to determine whether the edit_preprocessing_parameters_modal modal window is open.
+    :return: Output signal to determine whether the edit_preprocessing_parameters_modal modal window is open and output
+        signal containing data from store_preprocessing_params.
     """
-    global PREPROCESSING_PARAMS
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if (changed_id == 'edit_preprocessing_parameters.n_clicks' or
             changed_id == 'edit_processing_parameters_save.n_clicks' or
             changed_id == 'edit_processing_parameters_cancel.n_clicks'):
         if changed_id == 'edit_processing_parameters_save.n_clicks':
-            PREPROCESSING_PARAMS['TRIM_SPECTRUM']['run'] = trim_spectrum_checkbox
-            PREPROCESSING_PARAMS['TRIM_SPECTRUM']['lower_mass_range'] = trim_spectrum_lower_mass_range
-            PREPROCESSING_PARAMS['TRIM_SPECTRUM']['upper_mass_range'] = trim_spectrum_upper_mass_range
-            PREPROCESSING_PARAMS['TRANSFORM_INTENSITY']['run'] = transform_intensity_checkbox
-            PREPROCESSING_PARAMS['TRANSFORM_INTENSITY']['method'] = transform_intensity_method
-            PREPROCESSING_PARAMS['SMOOTH_BASELINE']['run'] = smooth_baseline_checkbox
-            PREPROCESSING_PARAMS['SMOOTH_BASELINE']['method'] = smooth_baseline_method
-            PREPROCESSING_PARAMS['SMOOTH_BASELINE']['window_length'] = smooth_baseline_window_length
-            PREPROCESSING_PARAMS['SMOOTH_BASELINE']['polyorder'] = smooth_baseline_polyorder
-            PREPROCESSING_PARAMS['SMOOTH_BASELINE']['delta_mz'] = smooth_baseline_delta_mz
-            PREPROCESSING_PARAMS['SMOOTH_BASELINE']['diff_thresh'] = smooth_baseline_diff_thresh
-            PREPROCESSING_PARAMS['REMOVE_BASELINE']['run'] = remove_baseline_checkbox
-            PREPROCESSING_PARAMS['REMOVE_BASELINE']['method'] = remove_baseline_method
-            PREPROCESSING_PARAMS['REMOVE_BASELINE']['min_half_window'] = remove_baseline_min_half_window
-            PREPROCESSING_PARAMS['REMOVE_BASELINE']['max_half_window'] = remove_baseline_max_half_window
-            PREPROCESSING_PARAMS['REMOVE_BASELINE']['decreasing'] = remove_baseline_decreasing
-            PREPROCESSING_PARAMS['REMOVE_BASELINE']['smooth_half_window'] = remove_baseline_smooth_half_window
-            PREPROCESSING_PARAMS['REMOVE_BASELINE']['filter_order'] = remove_baseline_filter_order
-            PREPROCESSING_PARAMS['REMOVE_BASELINE']['sigma'] = remove_baseline_sigma
-            PREPROCESSING_PARAMS['REMOVE_BASELINE']['increment'] = remove_baseline_increment
-            PREPROCESSING_PARAMS['REMOVE_BASELINE']['max_hits'] = remove_baseline_max_hits
-            PREPROCESSING_PARAMS['REMOVE_BASELINE']['window_tol'] = remove_baseline_window_tol
-            PREPROCESSING_PARAMS['REMOVE_BASELINE']['lambda_'] = remove_baseline_lambda_
-            PREPROCESSING_PARAMS['REMOVE_BASELINE']['porder'] = remove_baseline_porder
-            PREPROCESSING_PARAMS['REMOVE_BASELINE']['repetition'] = remove_baseline_repetition
-            PREPROCESSING_PARAMS['REMOVE_BASELINE']['degree'] = remove_baseline_degree
-            PREPROCESSING_PARAMS['REMOVE_BASELINE']['gradient'] = remove_baseline_gradient
-            PREPROCESSING_PARAMS['NORMALIZE_INTENSITY']['run'] = normalize_intensity_checkbox
-            PREPROCESSING_PARAMS['NORMALIZE_INTENSITY']['method'] = normalize_intensity_method
-            PREPROCESSING_PARAMS['BIN_SPECTRUM']['run'] = bin_spectrum_checkbox
-            PREPROCESSING_PARAMS['BIN_SPECTRUM']['n_bins'] = bin_spectrum_n_bins
-            PREPROCESSING_PARAMS['BIN_SPECTRUM']['lower_mass_range'] = bin_spectrum_lower_mass_range
-            PREPROCESSING_PARAMS['BIN_SPECTRUM']['upper_mass_range'] = bin_spectrum_upper_mass_range
-            """PREPROCESSING_PARAMS['ALIGN_SPECTRA']['run'] = align_spectra_checkbox
-            PREPROCESSING_PARAMS['ALIGN_SPECTRA']['method'] = align_spectra_method
-            if align_spectra_inter == 'whole' or align_spectra_inter == 'ndata':
-                PREPROCESSING_PARAMS['ALIGN_SPECTRA']['inter'] = align_spectra_inter
-            elif align_spectra_inter == 'nint':
-                PREPROCESSING_PARAMS['ALIGN_SPECTRA']['inter'] = align_spectra_inter_nint_value
-            if align_spectra_n == 'f' or align_spectra_n == 'b':
-                PREPROCESSING_PARAMS['ALIGN_SPECTRA']['n'] = align_spectra_n
-            elif align_spectra_n == 'integer':
-                PREPROCESSING_PARAMS['ALIGN_SPECTRA']['n'] = align_spectra_n_integer_value
-            PREPROCESSING_PARAMS['ALIGN_SPECTRA']['coshift_preprocessing'] = align_spectra_coshift_preprocessing
-            PREPROCESSING_PARAMS['ALIGN_SPECTRA'][
-                'coshift_preprocessing_max_shift'] = align_spectra_coshift_preprocessing_max_shift_value
-            PREPROCESSING_PARAMS['ALIGN_SPECTRA']['fill_with_previous'] = align_spectra_fill_with_previous
-            PREPROCESSING_PARAMS['ALIGN_SPECTRA']['average2_multiplier'] = align_spectra_average2_multiplier_value"""
-            PREPROCESSING_PARAMS['PEAK_PICKING']['method'] = peak_picking_method
-            PREPROCESSING_PARAMS['PEAK_PICKING']['snr'] = peak_picking_snr
-            PREPROCESSING_PARAMS['PEAK_PICKING']['widths'] = peak_picking_widths
-            PREPROCESSING_PARAMS['PEAK_PICKING']['deisotope'] = peak_picking_deisotope
-            PREPROCESSING_PARAMS['PEAK_PICKING']['fragment_tolerance'] = peak_picking_fragment_tolerance
-            PREPROCESSING_PARAMS['PEAK_PICKING']['fragment_unit_ppm'] = peak_picking_fragment_unit_ppm
-            PREPROCESSING_PARAMS['PEAK_PICKING']['min_charge'] = peak_picking_min_charge
-            PREPROCESSING_PARAMS['PEAK_PICKING']['max_charge'] = peak_picking_max_charge
-            PREPROCESSING_PARAMS['PEAK_PICKING']['keep_only_deisotoped'] = peak_picking_keep_only_deisotoped
-            PREPROCESSING_PARAMS['PEAK_PICKING']['min_isopeaks'] = peak_picking_min_isopeaks
-            PREPROCESSING_PARAMS['PEAK_PICKING']['max_isopeaks'] = peak_picking_max_isopeaks
-            PREPROCESSING_PARAMS['PEAK_PICKING']['make_single_charged'] = peak_picking_make_single_charged
-            PREPROCESSING_PARAMS['PEAK_PICKING']['annotate_charge'] = peak_picking_annotate_charge
-            PREPROCESSING_PARAMS['PEAK_PICKING']['annotate_iso_peak_count'] = peak_picking_annotate_iso_peak_count
-            PREPROCESSING_PARAMS['PEAK_PICKING']['use_decreasing_model'] = peak_picking_use_decreasing_model
-            PREPROCESSING_PARAMS['PEAK_PICKING']['start_intensity_check'] = peak_picking_start_intensity_check
-            PREPROCESSING_PARAMS['PEAK_PICKING']['add_up_intensity'] = peak_picking_add_up_intensity
-            PREPROCESSING_PARAMS['PRECURSOR_SELECTION']['top_n'] = precursor_selection_top_n_value
-            PREPROCESSING_PARAMS['PRECURSOR_SELECTION']['use_exclusion_list'] = precursor_selection_use_exclusion_list
-            PREPROCESSING_PARAMS['PRECURSOR_SELECTION']['exclusion_list_tolerance'] = precursor_selection_exclusion_list_tolerance_value
-        return not is_open
-    return is_open
+            preprocessing_params['TRIM_SPECTRUM']['run'] = trim_spectrum_checkbox
+            preprocessing_params['TRIM_SPECTRUM']['lower_mass_range'] = trim_spectrum_lower_mass_range
+            preprocessing_params['TRIM_SPECTRUM']['upper_mass_range'] = trim_spectrum_upper_mass_range
+            preprocessing_params['TRANSFORM_INTENSITY']['run'] = transform_intensity_checkbox
+            preprocessing_params['TRANSFORM_INTENSITY']['method'] = transform_intensity_method
+            preprocessing_params['SMOOTH_BASELINE']['run'] = smooth_baseline_checkbox
+            preprocessing_params['SMOOTH_BASELINE']['method'] = smooth_baseline_method
+            preprocessing_params['SMOOTH_BASELINE']['window_length'] = smooth_baseline_window_length
+            preprocessing_params['SMOOTH_BASELINE']['polyorder'] = smooth_baseline_polyorder
+            preprocessing_params['SMOOTH_BASELINE']['delta_mz'] = smooth_baseline_delta_mz
+            preprocessing_params['SMOOTH_BASELINE']['diff_thresh'] = smooth_baseline_diff_thresh
+            preprocessing_params['REMOVE_BASELINE']['run'] = remove_baseline_checkbox
+            preprocessing_params['REMOVE_BASELINE']['method'] = remove_baseline_method
+            preprocessing_params['REMOVE_BASELINE']['min_half_window'] = remove_baseline_min_half_window
+            preprocessing_params['REMOVE_BASELINE']['max_half_window'] = remove_baseline_max_half_window
+            preprocessing_params['REMOVE_BASELINE']['decreasing'] = remove_baseline_decreasing
+            preprocessing_params['REMOVE_BASELINE']['smooth_half_window'] = remove_baseline_smooth_half_window
+            preprocessing_params['REMOVE_BASELINE']['filter_order'] = remove_baseline_filter_order
+            preprocessing_params['REMOVE_BASELINE']['sigma'] = remove_baseline_sigma
+            preprocessing_params['REMOVE_BASELINE']['increment'] = remove_baseline_increment
+            preprocessing_params['REMOVE_BASELINE']['max_hits'] = remove_baseline_max_hits
+            preprocessing_params['REMOVE_BASELINE']['window_tol'] = remove_baseline_window_tol
+            preprocessing_params['REMOVE_BASELINE']['lambda_'] = remove_baseline_lambda_
+            preprocessing_params['REMOVE_BASELINE']['porder'] = remove_baseline_porder
+            preprocessing_params['REMOVE_BASELINE']['repetition'] = remove_baseline_repetition
+            preprocessing_params['REMOVE_BASELINE']['degree'] = remove_baseline_degree
+            preprocessing_params['REMOVE_BASELINE']['gradient'] = remove_baseline_gradient
+            preprocessing_params['NORMALIZE_INTENSITY']['run'] = normalize_intensity_checkbox
+            preprocessing_params['NORMALIZE_INTENSITY']['method'] = normalize_intensity_method
+            preprocessing_params['BIN_SPECTRUM']['run'] = bin_spectrum_checkbox
+            preprocessing_params['BIN_SPECTRUM']['n_bins'] = bin_spectrum_n_bins
+            preprocessing_params['BIN_SPECTRUM']['lower_mass_range'] = bin_spectrum_lower_mass_range
+            preprocessing_params['BIN_SPECTRUM']['upper_mass_range'] = bin_spectrum_upper_mass_range
+            preprocessing_params['PEAK_PICKING']['method'] = peak_picking_method
+            preprocessing_params['PEAK_PICKING']['snr'] = peak_picking_snr
+            preprocessing_params['PEAK_PICKING']['widths'] = peak_picking_widths
+            preprocessing_params['PEAK_PICKING']['deisotope'] = peak_picking_deisotope
+            preprocessing_params['PEAK_PICKING']['fragment_tolerance'] = peak_picking_fragment_tolerance
+            preprocessing_params['PEAK_PICKING']['fragment_unit_ppm'] = peak_picking_fragment_unit_ppm
+            preprocessing_params['PEAK_PICKING']['min_charge'] = peak_picking_min_charge
+            preprocessing_params['PEAK_PICKING']['max_charge'] = peak_picking_max_charge
+            preprocessing_params['PEAK_PICKING']['keep_only_deisotoped'] = peak_picking_keep_only_deisotoped
+            preprocessing_params['PEAK_PICKING']['min_isopeaks'] = peak_picking_min_isopeaks
+            preprocessing_params['PEAK_PICKING']['max_isopeaks'] = peak_picking_max_isopeaks
+            preprocessing_params['PEAK_PICKING']['make_single_charged'] = peak_picking_make_single_charged
+            preprocessing_params['PEAK_PICKING']['annotate_charge'] = peak_picking_annotate_charge
+            preprocessing_params['PEAK_PICKING']['annotate_iso_peak_count'] = peak_picking_annotate_iso_peak_count
+            preprocessing_params['PEAK_PICKING']['use_decreasing_model'] = peak_picking_use_decreasing_model
+            preprocessing_params['PEAK_PICKING']['start_intensity_check'] = peak_picking_start_intensity_check
+            preprocessing_params['PEAK_PICKING']['add_up_intensity'] = peak_picking_add_up_intensity
+            preprocessing_params['PRECURSOR_SELECTION']['top_n'] = precursor_selection_top_n_value
+            preprocessing_params['PRECURSOR_SELECTION']['use_exclusion_list'] = precursor_selection_use_exclusion_list
+            preprocessing_params['PRECURSOR_SELECTION']['exclusion_list_tolerance'] = precursor_selection_exclusion_list_tolerance_value
+        return not is_open, preprocessing_params
+    return is_open, preprocessing_params
 
 
 @app.callback(Output('edit_processing_parameters_modal_saved', 'is_open'),
@@ -1086,15 +1065,22 @@ def toggle_peak_picking_deisotope_parameters(n_clicks, value):
 @app.callback([Output('preview_precursor_list_modal', 'is_open'),
                Output('preview_id', 'options'),
                Output('preview_id', 'value'),
-               Output('preview_figure', 'figure')],
+               Output('preview_figure', 'figure'),
+               Output('store_sample_params_log', 'data')],
               [Input('preview_precursor_list', 'n_clicks'),
                Input('preview_precursor_list_modal_back', 'n_clicks'),
-               Input('preview_precursor_list_modal_run', 'n_clicks')],
+               Input('preview_precursor_list_modal_run', 'n_clicks'),
+               Input('store_preprocessing_params', 'data'),
+               Input('store_blank_spots', 'data'),
+               Input('store_spot_groups', 'data')],
               [State('preview_precursor_list_modal', 'is_open'),
                State('exclusion_list', 'data')])
 def preview_precursor_list(n_clicks_preview,
                            n_clicks_modal_back,
                            n_clicks_modal_run,
+                           preprocessing_params,
+                           blank_spots,
+                           spot_groups,
                            is_open,
                            exclusion_list):
     """
@@ -1105,6 +1091,9 @@ def preview_precursor_list(n_clicks_preview,
     :param n_clicks_preview: Input signal if the preview_precursor_list button is clicked.
     :param n_clicks_modal_back: Input signal if the preview_precursor_list_modal_back button is clicked.
     :param n_clicks_modal_run: Input signal if the preview_precursor_list_modal_run button is clicked.
+    :param preprocessing_params: Input signal containing data from store_preprocessing_params.
+    :param blank_spots: Input signal containing data from store_blank_spots.
+    :param spot_groups: Input signal containing data from store_spot_groups.
     :param is_open: State signal to determine whether the preview_precursor_list_modal modal window is open
     :param exclusion_list: State signal to provide the current exclusion list data.
     :return: Tuple of output signal to determine whether the preview_precursor_list_modal modal window is open, the
@@ -1112,14 +1101,10 @@ def preview_precursor_list(n_clicks_preview,
         menu values, and a blank figure to serve as a placeholder in the modal window body.
     """
     global INDEXED_DATA
-    global SPOT_GROUPS
-    global PREPROCESSING_PARAMS
-    global BLANK_SPOTS
-    global SAMPLE_PARAMS_LOG
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'preview_precursor_list.n_clicks':
-        params = copy.deepcopy(PREPROCESSING_PARAMS)
-        SAMPLE_PARAMS_LOG = copy.deepcopy(PREPROCESSING_PARAMS)
+        params = copy.deepcopy(preprocessing_params)
+        sample_params_log = copy.deepcopy(params)
         # preprocessing
         if params['TRIM_SPECTRUM']['run']:
             del params['TRIM_SPECTRUM']['run']
@@ -1149,10 +1134,10 @@ def preview_precursor_list(n_clicks_preview,
         for key, spectrum in INDEXED_DATA.items():
             spectrum.peak_picking(**params['PEAK_PICKING'])
         # groups have been defined
-        if len(SPOT_GROUPS.keys()) > 0:
+        if len(spot_groups.keys()) > 0:
             # process groups
-            spots_in_group = [i for value in SPOT_GROUPS.values() for i in value]
-            for group, list_of_spots in SPOT_GROUPS.items():
+            spots_in_group = [i for value in spot_groups.values() for i in value]
+            for group, list_of_spots in spot_groups.items():
                 group_spectra = [INDEXED_DATA[spot] for spot in list_of_spots]
                 group_feature_matrix = get_feature_matrix(group_spectra, missing_value_imputation=False)
                 group_feature_matrix.to_csv('C:\\Users\\bass\\data\\group_feature_matrix.csv')
@@ -1261,16 +1246,16 @@ def preview_precursor_list(n_clicks_preview,
                 spectrum.peak_picked_intensity_array = spectrum.peak_picked_intensity_array[top_n_indices]
                 spectrum.peak_picking_indices = spectrum.peak_picking_indices[top_n_indices]
         # populate dropdown menu
-        dropdown_options = [{'label': i, 'value': i} for i in INDEXED_DATA.keys() if i not in BLANK_SPOTS]
-        dropdown_value = [i for i in INDEXED_DATA.keys() if i not in BLANK_SPOTS]
-        return not is_open, dropdown_options, dropdown_value, blank_figure()
+        dropdown_options = [{'label': i, 'value': i} for i in INDEXED_DATA.keys() if i not in blank_spots['spots']]
+        dropdown_value = [i for i in INDEXED_DATA.keys() if i not in blank_spots['spots']]
+        return not is_open, dropdown_options, dropdown_value, blank_figure(), sample_params_log
     if changed_id == 'preview_precursor_list_modal_back.n_clicks':
         for key, spectrum in INDEXED_DATA.items():
             spectrum.undo_all_processing()
-        return not is_open, [], [], blank_figure()
+        return not is_open, [], [], blank_figure(), {}
     if changed_id == 'preview_precursor_list_modal_run.n_clicks':
-        return not is_open, [], [], blank_figure()
-    return is_open, [], [], blank_figure()
+        return not is_open, [], [], blank_figure(), {}
+    return is_open, [], [], blank_figure(), {}
 
 
 @app.callback([Output('preview_figure', 'figure'),
@@ -1297,14 +1282,20 @@ def update_preview_spectrum(value):
 @app.callback([Output('run_modal', 'is_open'),
                Output('run_success_modal', 'is_open')],
               [Input('preview_precursor_list_modal_run', 'n_clicks'),
-               Input('run_button', 'n_clicks')],
+               Input('run_button', 'n_clicks'),
+               Input('store_blank_params_log', 'data'),
+               Input('store_sample_params_log', 'data'),
+               Input('store_autox_seq', 'data'),
+               Input('store_autox_path_dict', 'data'),
+               Input('store_blank_spots', 'data')],
               [State('run_modal', 'is_open'),
                State('run_success_modal', 'is_open'),
                State('run_output_directory_value', 'value'),
                State('run_method_value', 'value'),
                State('run_method_checkbox', 'value'),
                State('exclusion_list', 'data')])
-def toggle_run_modal(preview_run_n_clicks, run_n_clicks, run_is_open, success_is_open, outdir, method, method_checkbox,
+def toggle_run_modal(preview_run_n_clicks, run_n_clicks, blank_params_log, sample_params_log, autox_seq,
+                     autox_path_dict, blank_spots, run_is_open, success_is_open, outdir, method, method_checkbox,
                      exclusion_list):
     """
     Dash callback to toggle the run_modal modal window and create the new MS/MS AutoXecute sequence. A new modal window
@@ -1313,6 +1304,11 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, run_is_open, success_is
 
     :param preview_run_n_clicks: Input signal if the preview_precursor_list_modal_run button is clicked.
     :param run_n_clicks: Input signal if the run_button button is clicked.
+    :param blank_params_log: Input signal containing data from store_blank_params_log.
+    :param sample_params_log: Input signal containing data from store_sample_params_log.
+    :param autox_seq: Input signal containing data from store_autox_seq.
+    :param autox_path_dict: Input signal containing data from store_autox_path_dict.
+    :param blank_spots: Input signal containing data from store_blank_spots.
     :param run_is_open: State signal to determine whether the run_modal modal window is open.
     :param success_is_open: State signal to determine whether the run_success_modal modal window is open.
     :param outdir: Path to folder in which to write the output AutoXecute sequence. Will also be used as the directory
@@ -1328,21 +1324,16 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, run_is_open, success_is
     if changed_id == 'preview_precursor_list_modal_run.n_clicks':
         return not run_is_open, success_is_open
     if changed_id == 'run_button.n_clicks':
-        global MS1_AUTOX
-        global AUTOX_PATH_DICT
         global INDEXED_DATA
-        global BLANK_SPOTS
-        global AUTOX_SEQ
-        global BLANK_PARAMS_LOG
-        global SAMPLE_PARAMS_LOG
         log = 'fleX MS/MS AutoXecute Generator Log\n\n'
         log += f'Output Directory: {outdir}\n\n'
-        new_autox = et.Element(MS1_AUTOX.tag, attrib=MS1_AUTOX.attrib)
+        ms1_autox = et.parse(autox_seq).getroot()
+        new_autox = et.Element(ms1_autox.tag, attrib=ms1_autox.attrib)
         new_autox.attrib['directory'] = outdir
-        for spot_group in MS1_AUTOX:
+        for spot_group in ms1_autox:
             log += f"Spot Group: {spot_group.attrib['sampleName']}\n"
             for cont in spot_group:
-                if cont.attrib['Pos_on_Scout'] not in BLANK_SPOTS and \
+                if cont.attrib['Pos_on_Scout'] not in blank_spots['spots'] and \
                         INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_mz_array is not None and \
                         INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_intensity_array is not None:
                     new_spot_group = et.SubElement(new_autox, spot_group.tag, attrib=spot_group.attrib)
@@ -1352,11 +1343,11 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, run_is_open, success_is
                         log += f"{spot_group.attrib['sampleName']} Method: {method}\n"
                     else:
                         new_spot_group.attrib['acqMethod'] = [value['method_path']
-                                                              for key, value in AUTOX_PATH_DICT.items()
+                                                              for key, value in autox_path_dict.items()
                                                               if value['sample_name'] == spot_group.attrib['sampleName']][0]
                         log += (f"{spot_group.attrib['sampleName']} Method: " +
                                 [value['method_path']
-                                 for key, value in AUTOX_PATH_DICT.items()
+                                 for key, value in autox_path_dict.items()
                                  if value['sample_name'] == spot_group.attrib['sampleName']][0] + '\n')
                     top_n_peaks = pd.DataFrame({'m/z': INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_mz_array,
                                                 'Intensity': INDEXED_DATA[cont.attrib['Pos_on_Scout']].peak_picked_intensity_array})
@@ -1368,20 +1359,20 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, run_is_open, success_is
                         new_cont.attrib['acqJobMode'] = 'MSMS'
                         new_cont.attrib['precursor_m_z'] = str(peak)
         new_autox_tree = et.ElementTree(new_autox)
-        new_autox_tree.write(os.path.join(outdir, os.path.splitext(os.path.split(AUTOX_SEQ)[-1])[0]) + '_MALDI_DDA.run',
+        new_autox_tree.write(os.path.join(outdir, os.path.splitext(os.path.split(autox_seq)[-1])[0]) + '_MALDI_DDA.run',
                              encoding='utf-8',
                              xml_declaration=True,
                              pretty_print=True)
         log += '\nSample Processing Parameters Used for Precursor Selection\n\n'
-        log += toml.dumps(SAMPLE_PARAMS_LOG) + '\n\n'
-        if 'PRECURSOR_SELECTION' in SAMPLE_PARAMS_LOG.keys():
-            if SAMPLE_PARAMS_LOG['PRECURSOR_SELECTION']['use_exclusion_list']:
+        log += toml.dumps(sample_params_log) + '\n\n'
+        if 'PRECURSOR_SELECTION' in sample_params_log.keys():
+            if sample_params_log['PRECURSOR_SELECTION']['use_exclusion_list']:
                 log += 'Blank Processing Parameters Used for Exclusion List Generation\n\n'
-                log += toml.dumps(BLANK_PARAMS_LOG) + '\n\n'
+                log += toml.dumps(blank_params_log) + '\n\n'
                 log += 'Exclusion List\n\n'
                 log += pd.DataFrame(exclusion_list).to_string(index=False) + '\n'
         with open(os.path.join(outdir,
-                               os.path.splitext(os.path.split(AUTOX_SEQ)[-1])[0]) + '_MALDI_DDA.log', 'w') as logfile:
+                               os.path.splitext(os.path.split(autox_seq)[-1])[0]) + '_MALDI_DDA.log', 'w') as logfile:
             logfile.write(log)
         return not run_is_open, not success_is_open
     return run_is_open, success_is_open

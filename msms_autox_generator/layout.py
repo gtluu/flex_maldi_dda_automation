@@ -1320,6 +1320,42 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox):
             dcc.Loading(
                 dcc.Store(id='store_plot')
             ),
+            dcc.Loading(
+                dcc.Store(id='store_preprocessing_params',
+                          data=get_maldi_dda_preprocessing_params())
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_blank_params_log',
+                          data={})
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_sample_params_log',
+                          data={})
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_autox_seq',
+                          data=get_autox_sequence_filename())
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_plate_format',
+                          data=get_geometry_format(et.parse(get_autox_sequence_filename()).getroot()))
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_autox_path_dict',
+                          data=get_autox_path_dict())
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_blank_spots',
+                          data={'spots': []})
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_spot_groups',
+                          data={})
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_indexed_data',
+                          data={})
+            ),
             dbc.Modal(
                 [
                     dbc.ModalHeader(dbc.ModalTitle('Loaded AutoXecute Sequence'), close_button=False),
