@@ -106,33 +106,18 @@ def toggle_autox_validation_modal_close(n_clicks, indexed_data, raw_data_path_in
     return is_open, indexed_data
 
 
-@app.callback([Output('plate_map', 'style_data_conditional'),
-               Output('plate_map_legend', 'style_data_conditional'),
-               Output('plate_map_legend', 'data'),
-               Output('new_group_name_modal', 'is_open'),
-               Output('new_group_name_modal_input_value', 'value'),
-               Output('plate_map', 'selected_cells'),
-               Output('plate_map', 'active_cell'),
+@app.callback([Output('new_group_name_modal', 'is_open'),
                Output('group_spots_error_modal', 'is_open'),
-               Output('store_spot_groups', 'data')],
+               Output('new_group_name_modal_input_value', 'value')],
               [Input('group_spots', 'n_clicks'),
-               Input('new_group_name_modal_save', 'n_clicks'),
-               Input('group_spots_error_modal_close', 'n_clicks'),
                Input('store_blank_spots', 'data'),
                Input('store_spot_groups', 'data')],
               [State('plate_map', 'selected_cells'),
-               State('plate_map', 'style_data_conditional'),
                State('plate_map', 'data'),
-               State('plate_map_legend', 'style_data_conditional'),
-               State('plate_map_legend', 'data'),
-               State('new_group_name_modal_input_value', 'value'),
-               State('new_group_name_modal_input_value', 'valid'),
                State('new_group_name_modal', 'is_open'),
                State('group_spots_error_modal', 'is_open')])
-def group_spots(n_clicks_group_spots, n_clicks_new_group_name_modal_save, n_clicks_group_spots_error_modal_close,
-                blank_spots, spot_groups, spots, plate_map_cell_style, plate_map_data, plate_map_legend_cell_style,
-                plate_map_legend_data, new_group_name, new_group_name_valid, new_group_name_modal_is_open,
-                group_name_spots_error_modal_is_open):
+def open_group_spots_modal(n_clicks, blank_spots, spot_groups, spots, plate_map_data, new_group_name_modal_is_open,
+                           group_name_spots_error_modal_is_open):
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'group_spots.n_clicks':
         if spots:
@@ -142,26 +127,33 @@ def group_spots(n_clicks_group_spots, n_clicks_new_group_name_modal_save, n_clic
                 if spot in blank_spots['spots'] or spot in [i for value in spot_groups.values() for i in value]:
                     error = True
             if not error:
-                return (plate_map_cell_style,
-                        plate_map_legend_cell_style,
-                        plate_map_legend_data,
-                        not new_group_name_modal_is_open,
-                        '',
-                        spots,
-                        None,
-                        group_name_spots_error_modal_is_open,
-                        spot_groups)
+                return not new_group_name_modal_is_open, group_name_spots_error_modal_is_open, ''
             elif error:
-                return (plate_map_cell_style,
-                        plate_map_legend_cell_style,
-                        plate_map_legend_data,
-                        new_group_name_modal_is_open,
-                        '',
-                        spots,
-                        None,
-                        not group_name_spots_error_modal_is_open,
-                        spot_groups)
-    elif changed_id == 'new_group_name_modal_save.n_clicks' and new_group_name_valid and \
+                return new_group_name_modal_is_open, not group_name_spots_error_modal_is_open, ''
+
+
+@app.callback([Output('plate_map', 'style_data_conditional'),
+               Output('plate_map_legend', 'style_data_conditional'),
+               Output('plate_map_legend', 'data'),
+               Output('new_group_name_modal', 'is_open'),
+               Output('new_group_name_modal_input_value', 'value'),
+               Output('plate_map', 'selected_cells'),
+               Output('plate_map', 'active_cell'),
+               Output('store_spot_groups', 'data')],
+              [Input('new_group_name_modal_save', 'n_clicks'),
+               Input('store_spot_groups', 'data')],
+              [State('plate_map', 'selected_cells'),
+               State('plate_map', 'style_data_conditional'),
+               State('plate_map', 'data'),
+               State('plate_map_legend', 'style_data_conditional'),
+               State('plate_map_legend', 'data'),
+               State('new_group_name_modal_input_value', 'value'),
+               State('new_group_name_modal_input_value', 'valid'),
+               State('new_group_name_modal', 'is_open'),])
+def group_spots(n_clicks, spot_groups, spots, plate_map_cell_style, plate_map_data, plate_map_legend_cell_style,
+                plate_map_legend_data, new_group_name, new_group_name_valid, new_group_name_modal_is_open):
+    changed_id = [i['prop_id'] for i in callback_context.triggered][0]
+    if changed_id == 'new_group_name_modal_save.n_clicks' and new_group_name_valid and \
             new_group_name not in pd.DataFrame(plate_map_legend_data)['Category'].values.tolist():
         gray_indices = [(style_dict['if']['row_index'], style_dict['if']['column_id'])
                         for style_dict in plate_map_cell_style
@@ -177,7 +169,7 @@ def group_spots(n_clicks_group_spots, n_clicks_new_group_name_modal_save, n_clic
                                                        for row, col in indices]
         plate_map_legend_df = pd.concat([pd.DataFrame(plate_map_legend_data),
                                          pd.DataFrame({'Category': [new_group_name]})], ignore_index=True)
-        plate_map_legend_cell_style = plate_map_legend_cell_style + [{'if': {'row_index': plate_map_legend_df.shape[0]-1},
+        plate_map_legend_cell_style = plate_map_legend_cell_style + [{'if': {'row_index': plate_map_legend_df.shape[0] - 1},
                                                                       'backgroundColor': color, 'color': 'white'}]
         return (plate_map_cell_style,
                 plate_map_legend_cell_style,
@@ -186,28 +178,16 @@ def group_spots(n_clicks_group_spots, n_clicks_new_group_name_modal_save, n_clic
                 '',
                 [],
                 None,
-                group_name_spots_error_modal_is_open,
                 spot_groups)
-    elif changed_id == 'group_spots_error_modal_close.n_clicks':
-        return (plate_map_cell_style,
-                plate_map_legend_cell_style,
-                plate_map_legend_data,
-                new_group_name_modal_is_open,
-                '',
-                spots,
-                None,
-                not group_name_spots_error_modal_is_open,
-                spot_groups)
-    else:
-        return (plate_map_cell_style,
-                plate_map_legend_cell_style,
-                plate_map_legend_data,
-                new_group_name_modal_is_open,
-                '',
-                [],
-                None,
-                group_name_spots_error_modal_is_open,
-                spot_groups)
+
+
+@app.callback(Output('group_spots_error_modal', 'is_open'),
+              Input('group_spots_error_modal_close', 'n_clicks'),
+              State('group_spots_error_modal', 'is_open'))
+def toggle_group_spots_error_modal(n_clicks, is_open):
+    if n_clicks:
+        return not is_open
+    return is_open
 
 
 @app.callback([Output('new_group_name_modal_input_value', 'valid'),
@@ -227,21 +207,18 @@ def check_if_new_group_name_valid(input_value, state_value, plate_map_legend_dat
                Output('group_spots_error_modal', 'is_open'),
                Output('store_blank_spots', 'data')],
               [Input('mark_spot_as_blank', 'n_clicks'),
-               Input('group_spots_error_modal_close', 'n_clicks'),
                Input('store_blank_spots', 'data'),
                Input('store_spot_groups', 'data')],
               [State('plate_map', 'selected_cells'),
                State('plate_map', 'style_data_conditional'),
                State('plate_map', 'data'),
                State('group_spots_error_modal', 'is_open')])
-def mark_spots_as_blank(n_clicks_mark_spot_as_blank, n_clicks_group_spots_error_modal_close, blank_spots, spot_groups,
-                        spots, cell_style, data, is_open):
+def mark_spots_as_blank(n_clicks, blank_spots, spot_groups, spots, cell_style, data, is_open):
     """
     Dash callback to mark a selected spot in the plate map as a 'blank' spot by changing the cell style and adding the
     cell ID to the dcc.Store store_blank_spots.
 
-    :param n_clicks_mark_spot_as_blank: Input signal if the mark_spot_as_blank button is clicked.
-    :param n_clicks_group_spots_error_modal_close: Input signal if the group_spots_error_modal_close button is clicked.
+    :param n_clicks: Input signal if the mark_spot_as_blank button is clicked.
     :param blank_spots: Input signal containing data from store_blank_spots.
     :param spot_groups: Input signal containing data from store_spot_groups.
     :param spots: Currently selected cells in the plate map.
@@ -273,8 +250,6 @@ def mark_spots_as_blank(n_clicks_mark_spot_as_blank, n_clicks_group_spots_error_
                                  for row, col in indices], [], None, is_open, blank_spots
         elif error:
             return cell_style, [], None, not is_open, blank_spots
-    elif changed_id == 'group_spots_error_modal_close.n_clicks':
-        return cell_style, [], None, not is_open, blank_spots
 
 
 @app.callback([Output('plate_map', 'style_data_conditional'),
@@ -375,16 +350,14 @@ def generate_exclusion_list_from_blank_spots(n_clicks, preprocessing_params, bla
                Output('exclusion_list_blank_spectra_id', 'value'),
                Output('exclusion_list_blank_spectra_figure', 'figure')],
               [Input('view_exclusion_list_spectra', 'n_clicks'),
-               Input('exclusion_list_blank_spectra_modal_close', 'n_clicks'),
                Input('store_blank_spots', 'data'),
                Input('store_indexed_data', 'data')],
               State('exclusion_list_blank_spectra_modal', 'is_open'))
-def view_exclusion_list_spectra(n_clicks_view, n_clicks_close, blank_spots, indexed_data, is_open):
+def view_exclusion_list_spectra(n_clicks, blank_spots, indexed_data, is_open):
     """
     Dash callback to view the preprocessed blank spot spectra that were used to generate the exclusion list.
 
-    :param n_clicks_view: Input signal if the view_exclusion_list_spectra button is clicked.
-    :param n_clicks_close: Input signal if the exclusion_list_blank_spectra_modal_close button is clicked.
+    :param n_clicks: Input signal if the view_exclusion_list_spectra button is clicked.
     :param blank_spots: Input signal containing data from store_blank_spots.
     :param indexed_data: Input signal containing data from store_indexed_data.
     :param is_open: State signal to determine whether the exclusion_list_blank_spectra_modal modal window is open.
@@ -398,9 +371,27 @@ def view_exclusion_list_spectra(n_clicks_view, n_clicks_close, blank_spots, inde
         dropdown_options = [{'label': i, 'value': i} for i in indexed_data.keys() if i in blank_spots['spots']]
         dropdown_value = [i for i in indexed_data.keys() if i in blank_spots['spots']]
         return not is_open, dropdown_options, dropdown_value, blank_figure()
+
+
+@app.callback([Output('exclusion_list_blank_spectra_modal', 'is_open'),
+               Output('exclusion_list_blank_spectra_id', 'options'),
+               Output('exclusion_list_blank_spectra_id', 'value'),
+               Output('exclusion_list_blank_spectra_figure', 'figure')],
+              Input('exclusion_list_blank_spectra_modal_close', 'n_clicks'),
+              State('exclusion_list_blank_spectra_modal', 'is_open'))
+def close_view_exclusion_list_spectra_modal(n_clicks, is_open):
+    """
+    Dash callback to view the preprocessed blank spot spectra that were used to generate the exclusion list.
+
+    :param n_clicks: Input signal if the exclusion_list_blank_spectra_modal_close button is clicked.
+    :param is_open: State signal to determine whether the exclusion_list_blank_spectra_modal modal window is open.
+    :return: Tuple of the output signal to determine whether the exclusion_list_blank_spectra_modal modal window is
+        open, the list of blank spectra IDs to populate the dropdown menu options, the list of blank spectra IDs to
+        populate the dropdown menu values, and a blank figure to serve as a placeholder in the modal window body.
+    """
+    changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'exclusion_list_blank_spectra_modal_close.n_clicks':
         return not is_open, [], [], blank_figure()
-    return is_open, [], [], blank_figure()
 
 
 @app.callback([Output('exclusion_list_blank_spectra_figure', 'figure'),
@@ -996,61 +987,6 @@ def toggle_bin_spectrum_parameters(n_clicks, value):
                 copy.deepcopy(HIDDEN)]
 
 
-"""@app.callback([Output('align_spectra_method_label', 'style'),
-               Output('align_spectra_method', 'style'),
-               Output('align_spectra_inter_label', 'style'),
-               Output('align_spectra_inter', 'style'),
-               Output('align_spectra_inter_nint', 'style'),
-               Output('align_spectra_n_label', 'style'),
-               Output('align_spectra_n', 'style'),
-               Output('align_spectra_n_integer', 'style'),
-               Output('align_spectra_coshift_preprocessing', 'style'),
-               Output('align_spectra_coshift_preprocessing_max_shift', 'style'),
-               Output('align_spectra_fill_with_previous', 'style'),
-               Output('align_spectra_average2_multiplier', 'style')],
-              [Input('edit_preprocessing_parameters', 'n_clicks'),
-               Input('align_spectra_checkbox', 'value'),
-               Input('align_spectra_method', 'value'),
-               Input('align_spectra_inter', 'value'),
-               Input('align_spectra_n', 'value')])
-def toggle_align_spectra_parameters(n_clicks, align_spectra_checkbox, align_spectra_method, align_spectra_inter,
-                                    align_spectra_n):
-    default_hidden = [copy.deepcopy(HIDDEN),
-                      copy.deepcopy(HIDDEN),
-                      copy.deepcopy(HIDDEN),
-                      copy.deepcopy(HIDDEN),
-                      copy.deepcopy(HIDDEN),
-                      copy.deepcopy(HIDDEN),
-                      copy.deepcopy(HIDDEN),
-                      copy.deepcopy(HIDDEN),
-                      copy.deepcopy(HIDDEN),
-                      copy.deepcopy(HIDDEN),
-                      copy.deepcopy(HIDDEN),
-                      copy.deepcopy(HIDDEN)]
-    default_shown = [copy.deepcopy(SHOWN),
-                     copy.deepcopy(SHOWN),
-                     copy.deepcopy(SHOWN),
-                     copy.deepcopy(SHOWN),
-                     copy.deepcopy(SHOWN),
-                     copy.deepcopy(SHOWN),
-                     copy.deepcopy(SHOWN),
-                     copy.deepcopy(SHOWN),
-                     copy.deepcopy(SHOWN),
-                     copy.deepcopy(SHOWN),
-                     copy.deepcopy(SHOWN),
-                     copy.deepcopy(SHOWN)]
-    if align_spectra_checkbox:
-        if align_spectra_method == 'average' or align_spectra_method == 'median' or align_spectra_method == 'max':
-            default_shown[11] = HIDDEN
-        if align_spectra_inter == 'whole' or align_spectra_inter == 'ndata':
-            default_shown[4] = HIDDEN
-        if align_spectra_n == 'f' or align_spectra_n == 'b':
-            default_shown[7] = HIDDEN
-        return default_shown
-    elif not align_spectra_checkbox:
-        return default_hidden"""
-
-
 @app.callback([Output('peak_picking_snr', 'style'),
                Output('peak_picking_widths', 'style')],
               [Input('edit_preprocessing_parameters', 'n_clicks'),
@@ -1107,23 +1043,17 @@ def toggle_peak_picking_deisotope_parameters(n_clicks, value):
                Output('store_sample_params_log', 'data'),
                Output('store_precursor_data', 'data')],
               [Input('preview_precursor_list', 'n_clicks'),
-               Input('preview_precursor_list_modal_back', 'n_clicks'),
-               Input('preview_precursor_list_modal_run', 'n_clicks'),
                Input('store_preprocessing_params', 'data'),
                Input('store_blank_spots', 'data'),
                Input('store_spot_groups', 'data'),
-               Input('store_indexed_data', 'data'),
-               Input('store_precursor_data', 'data')],
+               Input('store_indexed_data', 'data')],
               [State('preview_precursor_list_modal', 'is_open'),
                State('exclusion_list', 'data')])
-def preview_precursor_list(n_clicks_preview,
-                           n_clicks_modal_back,
-                           n_clicks_modal_run,
+def preview_precursor_list(n_clicks,
                            preprocessing_params,
                            blank_spots,
                            spot_groups,
                            indexed_data,
-                           precursor_data,
                            is_open,
                            exclusion_list):
     """
@@ -1131,15 +1061,12 @@ def preview_precursor_list(n_clicks_preview,
     modal window. In the modal window, going Back will reset and undo all preprocessing, while continuing to generate
     the MS/MS AutoXecute sequences closes the preview_precursor_list_modal modal window.
 
-    :param n_clicks_preview: Input signal if the preview_precursor_list button is clicked.
-    :param n_clicks_modal_back: Input signal if the preview_precursor_list_modal_back button is clicked.
-    :param n_clicks_modal_run: Input signal if the preview_precursor_list_modal_run button is clicked.
+    :param n_clicks: Input signal if the preview_precursor_list button is clicked.
     :param preprocessing_params: Input signal containing data from store_preprocessing_params.
     :param blank_spots: Input signal containing data from store_blank_spots.
     :param spot_groups: Input signal containing data from store_spot_groups.
     :param indexed_data: Input signal containing data from store_indexed_data.
-    :param precursor_data: Input signal containing data from store_precursor_data.
-    :param is_open: State signal to determine whether the preview_precursor_list_modal modal window is open
+    :param is_open: State signal to determine whether the preview_precursor_list_modal modal window is open.
     :param exclusion_list: State signal to provide the current exclusion list data.
     :return: Tuple of output signal to determine whether the preview_precursor_list_modal modal window is open, the
         list of spectra IDs to populate the dropdown menu options, the list of spectra IDs to populate the dropdown
@@ -1326,11 +1253,56 @@ def preview_precursor_list(n_clicks_preview,
         dropdown_options = [{'label': i, 'value': i} for i in indexed_data.keys() if i not in blank_spots['spots']]
         dropdown_value = [i for i in indexed_data.keys() if i not in blank_spots['spots']]
         return not is_open, dropdown_options, dropdown_value, blank_figure(), sample_params_log, precursor_data
+
+
+@app.callback([Output('preview_precursor_list_modal', 'is_open'),
+               Output('preview_id', 'options'),
+               Output('preview_id', 'value'),
+               Output('preview_figure', 'figure'),
+               Output('store_sample_params_log', 'data'),
+               Output('store_precursor_data', 'data')],
+              Input('preview_precursor_list_modal_back', 'n_clicks'))
+def close_preview_precursor_list_modal(n_clicks, is_open):
+    """
+    Dash callback to preprocess sample spectra based on current preprocessing parameters and view the spectra in a
+    modal window. In the modal window, going Back will reset and undo all preprocessing, while continuing to generate
+    the MS/MS AutoXecute sequences closes the preview_precursor_list_modal modal window.
+
+    :param n_clicks: Input signal if the preview_precursor_list_modal_back button is clicked.
+    :param is_open: State signal to determine whether the preview_precursor_list_modal modal window is open.
+    :return: Tuple of output signal to determine whether the preview_precursor_list_modal modal window is open, the
+        list of spectra IDs to populate the dropdown menu options, the list of spectra IDs to populate the dropdown
+        menu values, and a blank figure to serve as a placeholder in the modal window body.
+    """
+    changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'preview_precursor_list_modal_back.n_clicks':
         return not is_open, [], [], blank_figure(), {}, {}
+
+
+@app.callback([Output('preview_precursor_list_modal', 'is_open'),
+               Output('run_modal', 'is_open'),
+               Output('preview_id', 'options'),
+               Output('preview_id', 'value'),
+               Output('preview_figure', 'figure')],
+              Input('preview_precursor_list_modal_run', 'n_clicks'),
+              [State('preview_precursor_list_modal', 'is_open'),
+               State('run_modal', 'is_open')])
+def preview_precursor_list_proceed_with_run(n_clicks, preview_is_open, run_is_open):
+    """
+    Dash callback to preprocess sample spectra based on current preprocessing parameters and view the spectra in a
+    modal window. In the modal window, going Back will reset and undo all preprocessing, while continuing to generate
+    the MS/MS AutoXecute sequences closes the preview_precursor_list_modal modal window.
+
+    :param n_clicks: Input signal if the preview_precursor_list_modal_run button is clicked.
+    :param preview_is_open: State signal to determine whether the preview_precursor_list_modal modal window is open.
+    :param run_is_open: State signal to determine whether the run_modal modal window is open.
+    :return: Tuple of output signal to determine whether the preview_precursor_list_modal modal window is open, the
+        list of spectra IDs to populate the dropdown menu options, the list of spectra IDs to populate the dropdown
+        menu values, and a blank figure to serve as a placeholder in the modal window body.
+    """
+    changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'preview_precursor_list_modal_run.n_clicks':
-        return not is_open, [], [], blank_figure(), {}, precursor_data
-    return is_open, [], [], blank_figure(), {}, {}
+        return not preview_is_open, not run_is_open, [], [], blank_figure()
 
 
 @app.callback([Output('preview_figure', 'figure'),
@@ -1386,8 +1358,7 @@ def update_preview_spectrum(value, indexed_data, sample_params_log, precursor_da
 
 @app.callback([Output('run_modal', 'is_open'),
                Output('run_success_modal', 'is_open')],
-              [Input('preview_precursor_list_modal_run', 'n_clicks'),
-               Input('run_button', 'n_clicks'),
+              [Input('run_button', 'n_clicks'),
                Input('store_blank_params_log', 'data'),
                Input('store_sample_params_log', 'data'),
                Input('store_autox_seq', 'data'),
@@ -1400,16 +1371,15 @@ def update_preview_spectrum(value, indexed_data, sample_params_log, precursor_da
                State('run_method_value', 'value'),
                State('run_method_checkbox', 'value'),
                State('exclusion_list', 'data')])
-def toggle_run_modal(preview_run_n_clicks, run_n_clicks, blank_params_log, sample_params_log, autox_seq,
-                     autox_path_dict, blank_spots, precursor_data, run_is_open, success_is_open, outdir, method,
-                     method_checkbox, exclusion_list):
+def generate_msms_autox_sequence(n_clicks, blank_params_log, sample_params_log, autox_seq, autox_path_dict, blank_spots,
+                                 precursor_data, run_is_open, success_is_open, outdir, method, method_checkbox,
+                                 exclusion_list):
     """
     Dash callback to toggle the run_modal modal window and create the new MS/MS AutoXecute sequence. A new modal window
     displaying a success message and the output directory of the resulting AutoXecute sequence will be shown upon
     success.
 
-    :param preview_run_n_clicks: Input signal if the preview_precursor_list_modal_run button is clicked.
-    :param run_n_clicks: Input signal if the run_button button is clicked.
+    :param n_clicks: Input signal if the run_button button is clicked.
     :param blank_params_log: Input signal containing data from store_blank_params_log.
     :param sample_params_log: Input signal containing data from store_sample_params_log.
     :param autox_seq: Input signal containing data from store_autox_seq.
@@ -1428,8 +1398,6 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, blank_params_log, sampl
         determine whether the run_modal_success modal window is open.
     """
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
-    if changed_id == 'preview_precursor_list_modal_run.n_clicks':
-        return not run_is_open, success_is_open
     if changed_id == 'run_button.n_clicks':
         log = 'fleX MS/MS AutoXecute Generator Log\n\n'
         log += f'Output Directory: {outdir}\n\n'
@@ -1482,7 +1450,6 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, blank_params_log, sampl
                                os.path.splitext(os.path.split(autox_seq)[-1])[0]) + '_MALDI_DDA.log', 'w') as logfile:
             logfile.write(log)
         return not run_is_open, not success_is_open
-    return run_is_open, success_is_open
 
 
 @app.callback(Output('run_success_modal', 'is_open'),
