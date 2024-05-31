@@ -1,5 +1,4 @@
 import toml
-from lxml import etree as et
 from pymaldiproc.data_import import import_timstof_raw_data
 from pymaldiproc.preprocessing import get_feature_matrix
 from pymaldiviz.util import *
