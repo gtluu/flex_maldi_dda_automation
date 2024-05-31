@@ -116,8 +116,23 @@ def toggle_autox_validation_modal_close(n_clicks, indexed_data, raw_data_path_in
                State('plate_map', 'data'),
                State('new_group_name_modal', 'is_open'),
                State('group_spots_error_modal', 'is_open')])
-def open_group_spots_modal(n_clicks, blank_spots, spot_groups, spots, plate_map_data, new_group_name_modal_is_open,
-                           group_name_spots_error_modal_is_open):
+def toggle_group_spots_modal(n_clicks, blank_spots, spot_groups, spots, plate_map_data, new_group_name_modal_is_open,
+                             group_spots_error_modal_is_open):
+    """
+    Dash callback to toggle the modal window for entering a new spot group name.
+
+    :param n_clicks: Input signal if the group_spots button is clicked.
+    :param blank_spots: Input signal containing data from store_blank_spots.
+    :param spot_groups: Input signal containing data from store_spot_groups.
+    :param spots: State signal containing the currently selected cells in the plate map.
+    :param plate_map_data: State signal containing plate map data.
+    :param new_group_name_modal_is_open: State signal to determine whether the new_group_name_modal modal window is
+        open.
+    :param group_spots_error_modal_is_open: State signal to determine whether the group_spots_error_modal modal
+        window is open.
+    :return: Output signal to determine whether the new_group_name_modal and group_spots_error_modal modal windows are
+        open and the value of the new spot group name.
+    """
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'group_spots.n_clicks':
         if spots:
@@ -127,9 +142,9 @@ def open_group_spots_modal(n_clicks, blank_spots, spot_groups, spots, plate_map_
                 if spot in blank_spots['spots'] or spot in [i for value in spot_groups.values() for i in value]:
                     error = True
             if not error:
-                return not new_group_name_modal_is_open, group_name_spots_error_modal_is_open, ''
+                return not new_group_name_modal_is_open, group_spots_error_modal_is_open, ''
             elif error:
-                return new_group_name_modal_is_open, not group_name_spots_error_modal_is_open, ''
+                return new_group_name_modal_is_open, not group_spots_error_modal_is_open, ''
 
 
 @app.callback([Output('plate_map', 'style_data_conditional'),
@@ -152,6 +167,26 @@ def open_group_spots_modal(n_clicks, blank_spots, spot_groups, spots, plate_map_
                State('new_group_name_modal', 'is_open'),])
 def group_spots(n_clicks, spot_groups, spots, plate_map_cell_style, plate_map_data, plate_map_legend_cell_style,
                 plate_map_legend_data, new_group_name, new_group_name_valid, new_group_name_modal_is_open):
+    """
+    Dash callback to mark selected spots in the plate map as a group by changing the cell style and adding the cell IDs
+    to the dcc.Store store_blank_spots. A new entry in the plate map legend is added for the new spot group.
+
+    :param n_clicks: Input signal if the new_group_name_modal_save button is clicked.
+    :param spot_groups: Input signal containing data from store_spot_groups.
+    :param spots: State signal containing the currently selected cells in the plate map.
+    :param plate_map_cell_style: State signal containing the current style of the cells in the plate map.
+    :param plate_map_data: State signal containing plate map data.
+    :param plate_map_legend_cell_style: State signal containing the current style of the cells in the plate map legend.
+    :param plate_map_legend_data: State signal containing the plate map legend data.
+    :param new_group_name: State signal containing the value of the new group name entered.
+    :param new_group_name_valid: State signal to determine whether the currently entered group name is valid.
+    :param new_group_name_modal_is_open: State signal to determine whether the new_group_name_modal modal window is
+        open.
+    :return: Output signal containing updated style data for the plate_map and plate_map_legend, plate_map_legend data,
+        determining whether the new_group_name_modal modal window is open, resetting the value of the new group name
+        input value, resetting the selected and active cells in the plate_map, and containing the updated spot group
+        data.
+    """
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'new_group_name_modal_save.n_clicks' and new_group_name_valid and \
             new_group_name not in pd.DataFrame(plate_map_legend_data)['Category'].values.tolist():
@@ -185,6 +220,14 @@ def group_spots(n_clicks, spot_groups, spots, plate_map_cell_style, plate_map_da
               Input('group_spots_error_modal_close', 'n_clicks'),
               State('group_spots_error_modal', 'is_open'))
 def toggle_group_spots_error_modal(n_clicks, is_open):
+    """
+    Dash callback to toggle the error message window for invalid spots selected in the plate map for grouping or marking
+    as blank.
+
+    :param n_clicks: Input signal if the group_spots_error_modal_close button is clicked.
+    :param is_open: State signal to determine whether the group_spots_error_modal modal window is open.
+    :return: Output signal to determine whether the group_spots_error_modal modal window is open.
+    """
     if n_clicks:
         return not is_open
     return is_open
@@ -196,6 +239,14 @@ def toggle_group_spots_error_modal(n_clicks, is_open):
               [State('new_group_name_modal_input_value', 'value'),
                State('plate_map_legend', 'data')])
 def check_if_new_group_name_valid(input_value, state_value, plate_map_legend_data):
+    """
+    Dash callback to determine the validity of the new group name entered.
+
+    :param input_value: Input signal containing the value of the new group name entered.
+    :param state_value: State signal containing the value of the new group name entered.
+    :param plate_map_legend_data: State signal containing the plate map legend data.
+    :return: Output signal to determine whether the new group name entered is valid or not.
+    """
     if state_value != '' and state_value not in pd.DataFrame(plate_map_legend_data)['Category'].values.tolist():
         return True, False
     return False, True
@@ -221,8 +272,8 @@ def mark_spots_as_blank(n_clicks, blank_spots, spot_groups, spots, cell_style, d
     :param n_clicks: Input signal if the mark_spot_as_blank button is clicked.
     :param blank_spots: Input signal containing data from store_blank_spots.
     :param spot_groups: Input signal containing data from store_spot_groups.
-    :param spots: Currently selected cells in the plate map.
-    :param cell_style: Current style of the selected cells in the plate map.
+    :param spots: State signal containing the currently selected cells in the plate map.
+    :param cell_style: State signal containing the current style of the cells in the plate map.
     :param data: State signal containing plate map data.
     :param is_open: State signal to determine whether the group_spots_error_modal window is open.
     :return: Style data with the updated blank spot style for the selected cells appended.
