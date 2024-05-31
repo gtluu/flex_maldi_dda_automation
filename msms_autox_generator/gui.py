@@ -17,7 +17,7 @@ AUTOX_SEQ = get_autox_sequence_filename()
 app = DashProxy(prevent_initial_callbacks=True,
                 transforms=[MultiplexerTransform(),
                             ServersideOutputTransform(backends=[FileSystemBackend(cache_dir=FILE_SYSTEM_BACKEND)])],
-                external_stylesheets=[dbc.themes.BOOTSTRAP])
+                external_stylesheets=[dbc.themes.SPACELAB])
 app.layout = get_dashboard_layout(get_maldi_dda_preprocessing_params(),
                                   get_geometry_format(et.parse(AUTOX_SEQ).getroot()),
                                   get_autox_path_dict(AUTOX_SEQ),
@@ -1312,7 +1312,8 @@ def preview_precursor_list(n_clicks,
                Output('preview_figure', 'figure'),
                Output('store_sample_params_log', 'data'),
                Output('store_precursor_data', 'data')],
-              Input('preview_precursor_list_modal_back', 'n_clicks'))
+              Input('preview_precursor_list_modal_back', 'n_clicks'),
+              State('preview_precursor_list_modal', 'is_open'))
 def close_preview_precursor_list_modal(n_clicks, is_open):
     """
     Dash callback to preprocess sample spectra based on current preprocessing parameters and view the spectra in a
