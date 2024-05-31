@@ -140,7 +140,6 @@ def group_spots(n_clicks_group_spots, n_clicks_new_group_name_modal_save, n_clic
             error = False
             for spot in spots:
                 spot = plate_map_data[spot['row']][spot['column_id']]
-                print(blank_spots)
                 if spot in blank_spots['spots'] or spot in [i for value in spot_groups.values() for i in value]:
                     error = True
             if not error:
@@ -332,12 +331,9 @@ def generate_exclusion_list_from_blank_spots(n_clicks, preprocessing_params, bla
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'generate_exclusion_list_from_blank_spots.n_clicks':
         blank_spectra = []
-        print(blank_spots)
         for spot in blank_spots['spots']:
             data = import_timstof_raw_data(indexed_data[spot], mode='profile')
             blank_spectra = blank_spectra + [spectrum for spectrum in data if spectrum.coord == spot]
-            print(blank_spectra)
-            print([i.coord for i in blank_spectra])
         params = copy.deepcopy(preprocessing_params)
         blank_params_log = copy.deepcopy(preprocessing_params)
         # preprocessing
@@ -1117,7 +1113,8 @@ def toggle_peak_picking_deisotope_parameters(n_clicks, value):
                Input('store_preprocessing_params', 'data'),
                Input('store_blank_spots', 'data'),
                Input('store_spot_groups', 'data'),
-               Input('store_indexed_data', 'data')],
+               Input('store_indexed_data', 'data'),
+               Input('store_precursor_data', 'data')],
               [State('preview_precursor_list_modal', 'is_open'),
                State('exclusion_list', 'data')])
 def preview_precursor_list(n_clicks_preview,
@@ -1127,6 +1124,7 @@ def preview_precursor_list(n_clicks_preview,
                            blank_spots,
                            spot_groups,
                            indexed_data,
+                           precursor_data,
                            is_open,
                            exclusion_list):
     """
@@ -1141,6 +1139,7 @@ def preview_precursor_list(n_clicks_preview,
     :param blank_spots: Input signal containing data from store_blank_spots.
     :param spot_groups: Input signal containing data from store_spot_groups.
     :param indexed_data: Input signal containing data from store_indexed_data.
+    :param precursor_data: Input signal containing data from store_precursor_data.
     :param is_open: State signal to determine whether the preview_precursor_list_modal modal window is open
     :param exclusion_list: State signal to provide the current exclusion list data.
     :return: Tuple of output signal to determine whether the preview_precursor_list_modal modal window is open, the
@@ -1243,9 +1242,15 @@ def preview_precursor_list(n_clicks_preview,
                     spectra[spot].peak_picked_mz_array = np.array(values['mz'])
                     spectra[spot].peak_picked_intensity_array = np.array(values['intensity'])
                     spectra[spot].peak_picking_indices = np.array(values['index'])
-                    precursor_data[spot]['peak_picked_mz_array'] = copy.deepcopy(spectra[spot].peak_picked_mz_array)
-                    precursor_data[spot]['peak_picked_intensity_array'] = copy.deepcopy(spectra[spot].peak_picked_intensity_array)
-                    precursor_data[spot]['peak_picking_indices'] = copy.deepcopy(spectra[spot].peak_picking_indices)
+                    if spot not in precursor_data.keys():
+                        precursor_data[spot] = {}
+                        precursor_data[spot]['peak_picked_mz_array'] = copy.deepcopy(spectra[spot].peak_picked_mz_array)
+                        precursor_data[spot]['peak_picked_intensity_array'] = copy.deepcopy(spectra[spot].peak_picked_intensity_array)
+                        precursor_data[spot]['peak_picking_indices'] = copy.deepcopy(spectra[spot].peak_picking_indices)
+                    elif spot in precursor_data.keys():
+                        precursor_data[spot]['peak_picked_mz_array'] = copy.deepcopy(spectra[spot].peak_picked_mz_array)
+                        precursor_data[spot]['peak_picked_intensity_array'] = copy.deepcopy(spectra[spot].peak_picked_intensity_array)
+                        precursor_data[spot]['peak_picking_indices'] = copy.deepcopy(spectra[spot].peak_picking_indices)
             # process all other spots not found in a group
             # remove peaks found in exclusion list
             if params['PRECURSOR_SELECTION']['use_exclusion_list']:
@@ -1274,9 +1279,15 @@ def preview_precursor_list(n_clicks_preview,
                     spectrum.peak_picked_mz_array = spectrum.peak_picked_mz_array[top_n_indices]
                     spectrum.peak_picked_intensity_array = spectrum.peak_picked_intensity_array[top_n_indices]
                     spectrum.peak_picking_indices = spectrum.peak_picking_indices[top_n_indices]
-                    precursor_data[key]['peak_picked_mz_array'] = copy.deepcopy(spectrum.peak_picked_mz_array)
-                    precursor_data[key]['peak_picked_intensity_array'] = copy.deepcopy(spectrum.peak_picked_intensity_array)
-                    precursor_data[key]['peak_picking_indices'] = copy.deepcopy(spectrum.peak_picking_indices)
+                    if key not in precursor_data.keys():
+                        precursor_data[key] = {}
+                        precursor_data[key]['peak_picked_mz_array'] = copy.deepcopy(spectra[key].peak_picked_mz_array)
+                        precursor_data[key]['peak_picked_intensity_array'] = copy.deepcopy(spectra[key].peak_picked_intensity_array)
+                        precursor_data[key]['peak_picking_indices'] = copy.deepcopy(spectra[key].peak_picking_indices)
+                    elif key in precursor_data.keys():
+                        precursor_data[key]['peak_picked_mz_array'] = copy.deepcopy(spectra[key].peak_picked_mz_array)
+                        precursor_data[key]['peak_picked_intensity_array'] = copy.deepcopy(spectra[key].peak_picked_intensity_array)
+                        precursor_data[key]['peak_picking_indices'] = copy.deepcopy(spectra[key].peak_picking_indices)
         # no groups defined
         else:
             # remove peaks found in exclusion list
@@ -1303,9 +1314,15 @@ def preview_precursor_list(n_clicks_preview,
                 spectrum.peak_picked_mz_array = spectrum.peak_picked_mz_array[top_n_indices]
                 spectrum.peak_picked_intensity_array = spectrum.peak_picked_intensity_array[top_n_indices]
                 spectrum.peak_picking_indices = spectrum.peak_picking_indices[top_n_indices]
-                precursor_data[key]['peak_picked_mz_array'] = copy.deepcopy(spectrum.peak_picked_mz_array)
-                precursor_data[key]['peak_picked_intensity_array'] = copy.deepcopy(spectrum.peak_picked_intensity_array)
-                precursor_data[key]['peak_picking_indices'] = copy.deepcopy(spectrum.peak_picking_indices)
+                if key not in precursor_data.keys():
+                    precursor_data[key] = {}
+                    precursor_data[key]['peak_picked_mz_array'] = copy.deepcopy(spectra[key].peak_picked_mz_array)
+                    precursor_data[key]['peak_picked_intensity_array'] = copy.deepcopy(spectra[key].peak_picked_intensity_array)
+                    precursor_data[key]['peak_picking_indices'] = copy.deepcopy(spectra[key].peak_picking_indices)
+                elif key in precursor_data.keys():
+                    precursor_data[key]['peak_picked_mz_array'] = copy.deepcopy(spectra[key].peak_picked_mz_array)
+                    precursor_data[key]['peak_picked_intensity_array'] = copy.deepcopy(spectra[key].peak_picked_intensity_array)
+                    precursor_data[key]['peak_picking_indices'] = copy.deepcopy(spectra[key].peak_picking_indices)
         # populate dropdown menu
         dropdown_options = [{'label': i, 'value': i} for i in indexed_data.keys() if i not in blank_spots['spots']]
         dropdown_value = [i for i in indexed_data.keys() if i not in blank_spots['spots']]
@@ -1313,7 +1330,7 @@ def preview_precursor_list(n_clicks_preview,
     if changed_id == 'preview_precursor_list_modal_back.n_clicks':
         return not is_open, [], [], blank_figure(), {}, {}
     if changed_id == 'preview_precursor_list_modal_run.n_clicks':
-        return not is_open, [], [], blank_figure(), {}, {}
+        return not is_open, [], [], blank_figure(), {}, precursor_data
     return is_open, [], [], blank_figure(), {}, {}
 
 
@@ -1355,9 +1372,10 @@ def update_preview_spectrum(value, indexed_data, sample_params_log, precursor_da
     if sample_params_log['BIN_SPECTRUM']['run']:
         del sample_params_log['BIN_SPECTRUM']['run']
         spectrum.bin_spectrum(**sample_params_log['BIN_SPECTRUM'])
-    spectrum.peak_picked_mz_array = copy.deepcopy(precursor_data[value]['peak_picked_mz_array'])
-    spectrum.peak_picked_intensity_array = copy.deepcopy(precursor_data[value]['peak_picked_intensity_array'])
-    spectrum.peak_picking_indices = copy.deepcopy(precursor_data[value]['peak_picking_indices'])
+    if value in precursor_data.keys():
+        spectrum.peak_picked_mz_array = copy.deepcopy(precursor_data[value]['peak_picked_mz_array'])
+        spectrum.peak_picked_intensity_array = copy.deepcopy(precursor_data[value]['peak_picked_intensity_array'])
+        spectrum.peak_picking_indices = copy.deepcopy(precursor_data[value]['peak_picking_indices'])
     if spectrum.peak_picking_indices is None:
         label_peaks = False
     else:
@@ -1423,6 +1441,7 @@ def toggle_run_modal(preview_run_n_clicks, run_n_clicks, blank_params_log, sampl
             log += f"Spot Group: {spot_group.attrib['sampleName']}\n"
             for cont in spot_group:
                 if cont.attrib['Pos_on_Scout'] not in blank_spots['spots'] and \
+                        cont.attrib['Pos_on_Scout'] in precursor_data.keys() and \
                         precursor_data[cont.attrib['Pos_on_Scout']]['peak_picked_mz_array'] is not None and \
                         precursor_data[cont.attrib['Pos_on_Scout']]['peak_picked_intensity_array'] is not None:
                     new_spot_group = et.SubElement(new_autox, spot_group.tag, attrib=spot_group.attrib)
