@@ -1168,7 +1168,6 @@ def preview_precursor_list(n_clicks,
             for group, list_of_spots in spot_groups.items():
                 group_spectra = [spectra[spot] for spot in list_of_spots]
                 group_feature_matrix = get_feature_matrix(group_spectra, missing_value_imputation=False)
-                group_feature_matrix.to_csv('C:\\Users\\bass\\data\\group_feature_matrix.csv')
                 group_consensus_df = pd.DataFrame(data={'m/z': np.unique(group_feature_matrix['mz'].values),
                                                         'Intensity': group_feature_matrix.loc[:, group_feature_matrix.columns != 'mz'].mean(axis=1)})
                 # remove peaks found in exclusion list
