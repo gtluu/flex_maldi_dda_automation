@@ -1,6 +1,5 @@
 from setuptools import setup
 import os
-from msms_autox_generator import VERSION
 
 
 if os.path.isfile('requirements.txt'):
@@ -13,14 +12,14 @@ if os.path.isfile('requirements.txt'):
 
 setup(
     name='flex_maldi_dda_automation',
-    version=VERSION,
+    version='0.4.0b8',
     url='https://github.com/gtluu/flex_maldi_dda_automation',
     license='Apache License',
     author='Gordon T. Luu',
     author_email='gtluu912@gmail.com',
-    packages=['msms_autox_generator'],
+    packages=['msms_autox_generator', 'etc'],
     include_package_data=True,
-    package_data={'': ['*.cfg']},
+    package_data={'': ['*.cfg', '*.csv']},
     description='timsTOF fleX MALDI AutoXecute Automation Scripts',
     entry_points={'console_scripts': ['msms_autox_generator=msms_autox_generator.run:main']},
     install_requires=install_requires,

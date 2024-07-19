@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['msms_autox_generator.py'],
+    ['msms_autox_generator/fleX_MSMS_AutoXecute_Generator.py'],
     pathex=[],
     binaries=[],
     datas=[
@@ -31,7 +31,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='msms_autox_generator',
+    name='fleX_MSMS_AutoXecute_Generator',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -51,5 +51,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='msms_autox_generator',
+    name='fleX MSMS AutoXecute Generator',
 )

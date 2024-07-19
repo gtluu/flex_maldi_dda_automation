@@ -482,153 +482,6 @@ def get_preprocessing_parameters_layout(param_dict):
         style={'margin': '20px'}
     )
 
-    """align_spectra_parameters = html.Div(
-        [
-            html.H5('Spectra Alignment Parameters (Only Used for Exclusion List Generation from Blank Spots)'),
-            dbc.Checkbox(
-                id='align_spectra_checkbox',
-                label='Align Spectra (Only Used for Exclusion List Generation from Blank Spots)',
-                value=param_dict['ALIGN_SPECTRA']['run']
-            ),
-            html.P('Method', id='align_spectra_method_label'),
-            dbc.RadioItems(
-                id='align_spectra_method',
-                options=[
-                    {'label': 'Average', 'value': 'average'},
-                    {'label': 'Median', 'value': 'median'},
-                    {'label': 'Max', 'value': 'max'},
-                    {'label': 'Average2', 'value': 'average2'}
-                ],
-                value=param_dict['ALIGN_SPECTRA']['method'],
-                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
-                inputStyle={'margin-right': '10px'},
-                className='btn-group',
-                inputClassName='btn-check',
-                labelClassName='btn btn-outline-primary',
-                labelCheckedClassName='active',
-            ),
-            html.P('Definition of Alignment Mode', id='align_spectra_inter_label'),
-            dbc.RadioItems(
-                id='align_spectra_inter',
-                options=[
-                    {'label': 'Whole', 'value': 'whole'},
-                    {'label': 'Number of Many Intervals', 'value': 'nint'},
-                    {'label': 'Length of Regular Intervals', 'value': 'ndata'}
-                ],
-                value=param_dict['ALIGN_SPECTRA']['inter'],
-                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
-                inputStyle={'margin-right': '10px'},
-                className='btn-group',
-                inputClassName='btn-check',
-                labelClassName='btn btn-outline-primary',
-                labelCheckedClassName='active',
-            ),
-            dbc.InputGroup(
-                [
-                    dbc.InputGroupText('Number of Many Intervals'),
-                    dbc.Input(id='align_spectra_inter_nint_value',
-                              placeholder=100,
-                              value=100,
-                              type='number',
-                              min=1,
-                              step=1)
-                ],
-                id='align_spectra_inter_nint',
-                style={'margin': '10px',
-                       'display': 'flex'}
-            ),
-            html.P('n for Each Interval', id='align_spectra_n_label'),
-            dbc.RadioItems(
-                id='align_spectra_n',
-                options=[
-                    {'label': 'Fast', 'value': 'f'},
-                    {'label': 'Best', 'value': 'b'},
-                    {'label': 'Integer', 'value': 'integer'}
-                ],
-                value=param_dict['ALIGN_SPECTRA']['n'],
-                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
-                inputStyle={'margin-right': '10px'},
-                className='btn-group',
-                inputClassName='btn-check',
-                labelClassName='btn btn-outline-primary',
-                labelCheckedClassName='active',
-            ),
-            dbc.InputGroup(
-                [
-                    dbc.InputGroupText('Maximum Shift Correction in Data Points/Scale Units'),
-                    dbc.Input(id='align_spectra_n_integer_value',
-                              placeholder=1,
-                              value=1,
-                              type='number',
-                              min=1,
-                              step=1)
-                ],
-                id='align_spectra_n_integer',
-                style={'margin': '10px',
-                       'display': 'flex'}
-            ),
-            # skipping scale parameter
-            dbc.RadioItems(
-                id='align_spectra_coshift_preprocessing',
-                options=[
-                    {'label': 'Execute Co-Shift Step Before Alignment', 'value': True},
-                    {'label': 'Do Not Perform Co-Shift Step', 'value': False}
-                ],
-                value=param_dict['ALIGN_SPECTRA']['coshift_preprocessing'],
-                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
-                inputStyle={'margin-right': '10px'},
-                className='btn-group',
-                inputClassName='btn-check',
-                labelClassName='btn btn-outline-primary',
-                labelCheckedClassName='active',
-            ),
-            dbc.InputGroup(
-                [
-                    dbc.InputGroupText('Co-Shift Preprocessing Max Shift'),
-                    dbc.Input(id='align_spectra_coshift_preprocessing_max_shift_value',
-                              placeholder=param_dict['ALIGN_SPECTRA']['coshift_preprocessing_max_shift'],
-                              value=param_dict['ALIGN_SPECTRA']['coshift_preprocessing_max_shift'],
-                              type='number',
-                              min=1,
-                              step=1)
-                ],
-                id='align_spectra_coshift_preprocessing_max_shift',
-                style={'margin': '10px',
-                       'display': 'flex'}
-            ),
-            dbc.RadioItems(
-                id='align_spectra_fill_with_previous',
-                options=[
-                    {'label': 'Fill with Previous Point', 'value': True},
-                    {'label': 'Set to NaN', 'value': False}
-                ],
-                value=param_dict['ALIGN_SPECTRA']['fill_with_previous'],
-                labelStyle={'display': 'inline-block', 'marginRight': '20px'},
-                inputStyle={'margin-right': '10px'},
-                className='btn-group',
-                inputClassName='btn-check',
-                labelClassName='btn btn-outline-primary',
-                labelCheckedClassName='active',
-            ),
-            dbc.InputGroup(
-                [
-                    dbc.InputGroupText('Average2 Multiplier'),
-                    dbc.Input(id='align_spectra_average2_multiplier_value',
-                              placeholder=param_dict['ALIGN_SPECTRA']['average2_multiplier'],
-                              value=param_dict['ALIGN_SPECTRA']['average2_multiplier'],
-                              type='number',
-                              min=1,
-                              step=1)
-                ],
-                id='align_spectra_average2_multiplier',
-                style={'margin': '10px',
-                       'display': 'flex'}
-            )
-        ],
-        id='align_spectra_parameters',
-        style={'margin': '20px'}
-    )"""
-
     peak_picking_parameters = html.Div(
         [
             html.H5('Peak Picking Parameters'),
@@ -1224,7 +1077,7 @@ def get_preview_layout():
     ]
 
 
-def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox):
+def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox_seq):
     """
     Obtain the main dashboard layout.
 
@@ -1232,9 +1085,10 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox):
     :param plate_format: Plate geometry used to generate the plate map table.
     :param autox_path_dict: Nested dictionary containing spot group sample names, data paths, and method paths from the
         .run file.
-    :param autox: AutoXecute sequence file loaded as an XML tree.
+    :param autox_seq: AutoXecute sequence file path.
     :return: Div containing the main dashboard layout.
     """
+    autox = et.parse(autox_seq).getroot()
     outdir = autox.attrib['directory']
     plate_map_df = get_plate_map(plate_format)
     plate_map_legend_df = get_plate_map_legend()
@@ -1319,6 +1173,46 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox):
             ),
             dcc.Loading(
                 dcc.Store(id='store_plot')
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_preprocessing_params',
+                          data=get_maldi_dda_preprocessing_params())
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_blank_params_log',
+                          data={})
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_sample_params_log',
+                          data={})
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_autox_seq',
+                          data=autox_seq)
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_plate_format',
+                          data=get_geometry_format(et.parse(autox_seq).getroot()))
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_autox_path_dict',
+                          data=get_autox_path_dict(autox_seq))
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_blank_spots',
+                          data={'spots': []})
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_spot_groups',
+                          data={})
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_indexed_data',
+                          data={})
+            ),
+            dcc.Loading(
+                dcc.Store(id='store_precursor_data',
+                          data={})
             ),
             dbc.Modal(
                 [
