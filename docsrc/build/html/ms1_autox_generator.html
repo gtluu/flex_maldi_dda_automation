@@ -1,16 +1,19 @@
+
 <!DOCTYPE html>
 
-<html lang="en" data-content_root="./">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
     <title>About &#8212; flex_maldi_dda_automation 0.4.0b4 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d1102ebc" />
-    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=12dfc556" />
-    <script src="_static/documentation_options.js?v=02bec716"></script>
-    <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="About" href="msms_autox_generator.html" />
@@ -18,9 +21,8 @@
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
-
   
-  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head><body>
   
@@ -33,24 +35,24 @@
           <div class="body" role="main">
             
   <section id="about">
-<h1>About<a class="headerlink" href="#about" title="Link to this heading">¶</a></h1>
+<h1>About<a class="headerlink" href="#about" title="Permalink to this heading">¶</a></h1>
 <p>fleX MS1 AutoXecute Generator is a tool that allows users to create an AutoXecute sequence for Bruker timsControl in
 which multiple methods can be used to acquire data from the same spot to acquire multiple spectra. As an example, users
 can acquire data on a full 384 spot plate using a method tuned for lower mass ranges first, followed by a method tuned
 for higher mass ranges, all in a single automated run.</p>
 <section id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h2>
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h2>
 <p>Download from _____, unzip the folder, and run “ms1_autox_generator.exe” to start the program. No other installation
 is required.</p>
 </section>
 <section id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h2>
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">¶</a></h2>
 <p>Please note that this tool works best when run on the timsTOF fleX acquisition computer.</p>
 <p>Once loaded, the main window will be shown, and users will need to load a MALDI plate map, the desired timsControl
 acquisition methods to be used, and the MALDI plate geometry being used.</p>
 <img alt="fleX MS1 AutoXecute Generator Main Window" src="_images/ms1_autox_generator_01.png" />
 <section id="maldi-plate-map">
-<h3>MALDI Plate Map<a class="headerlink" href="#maldi-plate-map" title="Link to this heading">¶</a></h3>
+<h3>MALDI Plate Map<a class="headerlink" href="#maldi-plate-map" title="Permalink to this heading">¶</a></h3>
 <p>A CSV plate map can be selected with sample names can be selected by clicking the <code class="docutils literal notranslate"><span class="pre">Browse</span></code> button under
 <code class="docutils literal notranslate"><span class="pre">MALDI</span> <span class="pre">Plate</span> <span class="pre">Map</span></code>, which will create a file selection dialogue window to select a CSV file. This will create
 <code class="docutils literal notranslate"><span class="pre">Spot</span> <span class="pre">Groups</span></code> for each sample name in the plate map. For example, if A1, A2, and A3 are named <code class="docutils literal notranslate"><span class="pre">strain1</span></code>, this will
@@ -59,7 +61,7 @@ and 6144 format plates are provided.</p>
 <img alt="MALDI Plate Map File Selection Dialogue Window" src="_images/ms1_autox_generator_02.png" />
 </section>
 <section id="methods">
-<h3>Methods<a class="headerlink" href="#methods" title="Link to this heading">¶</a></h3>
+<h3>Methods<a class="headerlink" href="#methods" title="Permalink to this heading">¶</a></h3>
 <p>Similarly, methods can be selected by clicking the <code class="docutils literal notranslate"><span class="pre">Load</span> <span class="pre">Method(s)</span></code> button, which will open a directory selection
 dialogue window to select a method. If a directory that does not end in <code class="docutils literal notranslate"><span class="pre">.m</span></code> is selected, all Bruker timsControl
 <code class="docutils literal notranslate"><span class="pre">.m</span></code> methods within that directory and any subdirectories will be selected and added to the table below.</p>
@@ -72,7 +74,7 @@ the <code class="docutils literal notranslate"><span class="pre">strain1</span><
 <code class="docutils literal notranslate"><span class="pre">strain1_liloandstitch_mr1</span></code>, <code class="docutils literal notranslate"><span class="pre">strain1_liloandstitch_mr2</span></code>, and <code class="docutils literal notranslate"><span class="pre">strain1_liloandstitch_mr3</span></code>.</p>
 </section>
 <section id="maldi-plate-geometry">
-<h3>MALDI Plate Geometry<a class="headerlink" href="#maldi-plate-geometry" title="Link to this heading">¶</a></h3>
+<h3>MALDI Plate Geometry<a class="headerlink" href="#maldi-plate-geometry" title="Permalink to this heading">¶</a></h3>
 <p>Lastly, the appropriate <code class="docutils literal notranslate"><span class="pre">MALDI</span> <span class="pre">Plate</span> <span class="pre">Geometry</span></code> can be selected from the dropdown menu. Note that only plate
 geometries using standard microplate formats can be selected.</p>
 <img alt="MALDI Plate Geometry Selection" src="_images/ms1_autox_generator_05.png" />
@@ -82,13 +84,13 @@ be modified by going to <code class="docutils literal notranslate"><span class="
 <img alt="Edit Path to GeometryFiles" src="_images/ms1_autox_generator_06.png" />
 </section>
 <section id="bruker-timscontrol-version">
-<h3>Bruker timsControl Version<a class="headerlink" href="#bruker-timscontrol-version" title="Link to this heading">¶</a></h3>
+<h3>Bruker timsControl Version<a class="headerlink" href="#bruker-timscontrol-version" title="Permalink to this heading">¶</a></h3>
 <p>This program will also attempt to detect the current version of Bruker timsControl that is installed. However, if no
 installation of timsControl is found, it will default to using hte version of timsControl distributed with Compass
 2024b SR1.</p>
 </section>
 <section id="run">
-<h3>Run<a class="headerlink" href="#run" title="Link to this heading">¶</a></h3>
+<h3>Run<a class="headerlink" href="#run" title="Permalink to this heading">¶</a></h3>
 <p>Once all parameters have been loaded, click on <code class="docutils literal notranslate"><span class="pre">Generate</span> <span class="pre">AutoXecute</span> <span class="pre">Sequence</span></code> to open a dialogue window and select
 where to save the AutoXecute sequence.</p>
 <img alt="Save AutoXecute .run File Dialogue Window" src="_images/ms1_autox_generator_07.png" />
@@ -159,11 +161,11 @@ AutoXecute sequence using the <code class="docutils literal notranslate"><span c
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &#169;2024, Gordon T. Luu.
+      &copy;2024, Gordon T. Luu.
       
       |
-      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
-      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
       <a href="_sources/ms1_autox_generator.rst.txt"

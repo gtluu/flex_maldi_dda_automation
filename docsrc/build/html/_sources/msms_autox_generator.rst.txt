@@ -42,7 +42,7 @@ Installing on Windows
 
    .. code-block::
 
-        pip install -r https://raw.githubusercontent.com/gtluu/flex_maldi_dda_automation/gui/requirements.txt
+        pip install -r https://raw.githubusercontent.com/gtluu/flex_maldi_dda_automation/main/requirements.txt
 
 7. Install pyMALDIproc/pyMALDIviz.
 
