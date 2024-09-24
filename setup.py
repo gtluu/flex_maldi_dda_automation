@@ -21,7 +21,7 @@ setup(
     include_package_data=True,
     package_data={'': ['*.cfg', '*.csv']},
     description='timsTOF fleX MALDI AutoXecute Automation Scripts',
-    entry_points={'console_scripts': ['msms_autox_generator=msms_autox_generator.run:main']},
+    #entry_points={'console_scripts': ['msms_autox_generator=msms_autox_generator.run:main']},
     install_requires=install_requires,
     setup_requires=install_requires
 )
