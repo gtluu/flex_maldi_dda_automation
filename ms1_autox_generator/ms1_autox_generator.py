@@ -1,3 +1,6 @@
+# The following code has been modified from TIMSCONVERT.
+# For more information see: https://github.com/gtluu/timsconvert
+
 import os
 import configparser
 import datetime
