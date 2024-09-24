@@ -16,6 +16,9 @@ a = Analysis(
 		('C:\\Users\\bass\\.conda\\envs\\pmp\\Lib\\site-packages\\TDF-SDK', 'TDF-SDK'),
 		('C:\\Users\\bass\\code\\flex_maldi_dda_automation\\etc\\ms1_autox_generator.cfg', 'etc'),
 		('C:\\Users\\bass\\code\\flex_maldi_dda_automation\\etc\\plate_map_legend.csv', 'etc')
+		('LICENSE.md', '.'),
+		('third-party-licenses.txt', '.'),
+		('third-party-notices.txt', '.'),
 	],
     hiddenimports=[],
     hookspath=[],
@@ -43,6 +46,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     contents_directory='.'
+    icon='imgs/pymaldiviz_icon.ico'
 )
 coll = COLLECT(
     exe,

@@ -4,7 +4,7 @@ pyteomics==4.7.1
 scipy==1.12.0
 pyMSpec==0.1.2
 pybaselines==1.1.0
-BaselineRemoval==0.1.5
+BaselineRemoval==0.1.6
 seaborn==0.13.2
 matplotlib==3.8.3
 plotly==5.20.0
@@ -77,5 +77,5 @@ lazy-loader==0.4
 networkx==3.3
 tifffile==2024.5.3
 scikit-image==0.23.2
-git+https://github.com/mars20/icoshift.git
-git+https://github.com/gtluu/pyTDFSDK.git@v0.3.7
+git+https://github.com/gtluu/pyTDFSDK.git
+git+https://github.com/gtluu/pymaldiproc.git

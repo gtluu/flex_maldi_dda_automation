@@ -77,5 +77,5 @@ lazy-loader
 networkx
 tifffile
 scikit-image
-git+https://github.com/mars20/icoshift.git
 git+https://github.com/gtluu/pyTDFSDK.git
+git+https://github.com/gtluu/pymaldiproc.git
