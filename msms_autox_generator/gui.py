@@ -1,3 +1,7 @@
+# The following code has been modified from pyMALDIproc and pyMALDIviz.
+# For more infromation, see: https://github.com/gtluu/pyMALDIproc
+
+
 import toml
 from pymaldiproc.data_import import import_timstof_raw_data
 from pymaldiproc.preprocessing import get_feature_matrix

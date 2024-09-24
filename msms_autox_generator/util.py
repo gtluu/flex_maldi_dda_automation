@@ -1,3 +1,7 @@
+# The following code has been modified from pyMALDIproc and pyMALDIviz.
+# For more infromation, see: https://github.com/gtluu/pyMALDIproc
+
+
 import os
 import copy
 import random
