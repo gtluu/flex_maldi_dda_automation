@@ -34,4 +34,4 @@ from msms_autox_generator.tmpdir import *
 from msms_autox_generator.layout import *
 from msms_autox_generator.util import *
 
-VERSION = '0.4.0b8'
+VERSION = '0.4.0'

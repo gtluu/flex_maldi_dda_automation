@@ -1096,6 +1096,7 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox_seq):
     outdir = autox.attrib['directory']
     plate_map_df = get_plate_map(plate_format)
     plate_map_legend_df = get_plate_map_legend()
+    print(get_autox_path_dict(autox_seq))
     return dcc.Loading(
         html.Div(
             [

@@ -44,9 +44,11 @@ def update_raw_data_path(n_clicks, button_id, autox_path_dict):
     :return: Tuple of the updated Bruker .d directory path, whether the path is valid, and whether the path is invalid.
     """
     dirname = get_path_name()
+    print(button_id)
+    print(autox_path_dict)
     if (dirname.endswith('.d') and
             os.path.exists(dirname) and
-            os.path.splitext(os.path.split(dirname)[-1])[0] == autox_path_dict[button_id['index']]['sample_name']):
+            os.path.splitext(os.path.split(dirname)[-1])[0] == autox_path_dict[str(button_id['index'])]['sample_name']):
         autox_path_dict[button_id['index']]['raw_data_path'] = dirname
         return dirname, True, False
     else:
@@ -70,7 +72,7 @@ def update_method_path(n_clicks, button_id, autox_path_dict):
     """
     dirname = get_path_name()
     if dirname.endswith('.m') and os.path.exists(dirname):
-        autox_path_dict[button_id['index']]['method_path'] = dirname
+        autox_path_dict[str(button_id['index'])]['method_path'] = dirname
         return dirname, True, False
     else:
         return dirname, False, True

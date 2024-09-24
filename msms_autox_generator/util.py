@@ -127,9 +127,9 @@ def get_maldi_dda_preprocessing_params():
 
 
 def get_autox_path_dict(autox_seq):
-    return {index: {'sample_name': spot_group.attrib['sampleName'],
-                    'raw_data_path': f"{os.path.join(et.parse(autox_seq).getroot().attrib['directory'], spot_group.attrib['sampleName'])}.d",
-                    'method_path': spot_group.attrib['acqMethod']}
+    return {str(index): {'sample_name': spot_group.attrib['sampleName'],
+                         'raw_data_path': f"{os.path.join(et.parse(autox_seq).getroot().attrib['directory'], spot_group.attrib['sampleName'])}.d",
+                         'method_path': spot_group.attrib['acqMethod']}
             for index, spot_group in enumerate(et.parse(autox_seq).getroot())}
 
 
