@@ -1,3 +1,7 @@
+# The following code has been modified from pyMALDIproc and pyMALDIviz.
+# For more infromation, see: https://github.com/gtluu/pyMALDIproc
+
+
 from contextlib import redirect_stdout
 from io import StringIO
 import webview
