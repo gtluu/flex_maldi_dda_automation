@@ -310,12 +310,71 @@ def mark_spots_as_blank(n_clicks, blank_spots, spot_groups, spots, cell_style, d
 @app.callback([Output('plate_map', 'style_data_conditional'),
                Output('plate_map_legend', 'style_data_conditional'),
                Output('plate_map_legend', 'data'),
+               Output('plate_map_legend', 'selected_cells'),
+               Output('plate_map_legend', 'active_cell'),
+               Output('store_blank_spots', 'data'),
+               Output('store_spot_groups', 'data')],
+              [Input('clear_selected_groups', 'n_clicks'),
+               Input('store_blank_spots', 'data'),
+               Input('store_spot_groups', 'data')],
+              [State('plate_map', 'style_data_conditional'),
+               State('plate_map', 'data'),
+               State('plate_map_legend', 'selected_cells'),
+               State('plate_map_legend', 'style_data_conditional'),
+               State('plate_map_legend', 'data')])
+def clear_selected_groups(n_clicks, blank_spots, spot_groups, plate_map_cell_style, plate_map_data, groups,
+                          plate_map_legend_cell_style, plate_map_legend_data):
+    """
+    Dash callback to remove select blank spot and spot group styling and data from the plate map, plate map legend, and
+    their respective dcc.Store objects.
+
+    :param n_clicks: Input signal if the clear_selected_groups button is clicked.
+    :param blank_spots: Input signal containing data from store_blank_spots.
+    :param spot_groups: Input signal containing data from store_spot_groups.
+    :param plate_map_cell_style: State signal containing the current style of the cells in the plate map.
+    :param plate_map_data: State signal containing plate map data.
+    :param groups: State signal containing the selected group(s) from the plate map legend.
+    :param plate_map_legend_cell_style: State signal containing the current style of the cells in the plate map legend.
+    :param plate_map_legend_data: State signal containing the plate map legend data.
+    :return: Output signal containing updated style data for the plate_map and plate_map_legend, plate_map_legend data,
+        resetting the selected and active cells in the plate_map, and containing the updated blank spot and spot group
+        data.
+    """
+    changed_id = [i['prop_id'] for i in callback_context.triggered][0]
+    if changed_id == 'clear_selected_groups.n_clicks':
+        for group in groups[::-1]:
+            group_name = plate_map_legend_data[group['row']][group['column_id']]
+            if group_name in spot_groups.keys():
+                spots = spot_groups.pop(group_name)
+                print(spots)
+            else:
+                spots = copy.deepcopy(blank_spots['spots'])
+                blank_spots = {'spots': []}
+            plate_map_legend_index = -1
+            for index, category_dict in enumerate(plate_map_legend_data, start=0):
+                if (category_dict['Category'] == group_name and category_dict['Category'] != 'Sample' and
+                        category_dict['Category'] != 'Blank' and category_dict['Category'] != 'Empty'):
+                    del plate_map_legend_data[index]
+                    plate_map_legend_index = index
+            for style_dict in plate_map_cell_style[::-1]:
+                if plate_map_data[style_dict['if']['row_index']][style_dict['if']['column_id']] in spots:
+                    plate_map_cell_style.remove(style_dict)
+            for style_dict in plate_map_legend_cell_style[::-1]:
+                if style_dict['if']['row_index'] == plate_map_legend_index:
+                    plate_map_legend_cell_style.remove(style_dict)
+        return (plate_map_cell_style, plate_map_legend_cell_style, plate_map_legend_data, [], None,
+                blank_spots, spot_groups)
+
+
+@app.callback([Output('plate_map', 'style_data_conditional'),
+               Output('plate_map_legend', 'style_data_conditional'),
+               Output('plate_map_legend', 'data'),
                Output('store_blank_spots', 'data'),
                Output('store_spot_groups', 'data')],
               [Input('clear_blanks_and_groups', 'n_clicks'),
                Input('store_plate_format', 'data'),
                Input('store_autox_seq', 'data')])
-def clear_blanks_and_groups(n_clicks, plate_format, autox_seq):
+def clear_all_blanks_and_groups(n_clicks, plate_format, autox_seq):
     """
     Dash callback to remove all blank spot and spot group styling from the plate map, remove all blank spot IDs from
     the dcc.Store store_blank_spots, and remove all spot groups from the dcc.Store store_spot_groups.

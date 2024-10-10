@@ -1135,6 +1135,11 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox_seq):
                                     style={'margin': '20px'}
                                 ),
                                 dbc.Button(
+                                    'Clear Selected Groups',
+                                    id='clear_selected_groups',
+                                    style={'margin': '20px'}
+                                ),
+                                dbc.Button(
                                     'Clear All Blank Spots and Spot Groups',
                                     id='clear_blanks_and_groups',
                                     style={'margin': '20px'}
