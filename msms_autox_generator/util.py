@@ -128,6 +128,12 @@ def get_geometry_format(autox):
 
 
 def get_rgb_color():
+    """
+    Get a random RGB color.
+
+    :return: Random RGB color.
+    :rtype: str
+    """
     return f'rgb({str(random.randrange(0, 256))}, {str(random.randrange(0, 256))}, {str(random.randrange(0, 256))})'
 
 
@@ -166,8 +172,15 @@ def get_plate_map(plate_format):
 
 
 def get_plate_map_style(df, autox):
-    # style_dicts = [{'if': {'state': 'selected'},
-    #                'backgroundColor': 'inherit !important'}]
+    """
+    Obtain the plate map styles to be displayed in a Dash DataTable.
+
+    :param df: DataFrame containing coordinate information.
+    :type df: pandas.DataFrame
+    :param autox: AutoXecute sequence XML element object.
+    :return: List of dictionaries containing style parameters for the plate map.
+    :rtype: list[dict]
+    """
     style_dicts = []
     plate_coords = [coord for coords in df.values.tolist() for coord in coords]
     autox_coords = [cont.attrib['Pos_on_Scout'] for spot_group in autox for cont in spot_group]
@@ -182,4 +195,11 @@ def get_plate_map_style(df, autox):
 
 
 def get_plate_map_legend():
+    """
+    Obtain a pandas.DataFrame containing the default plate map legend values with categories 'Sample', 'Blank', and
+    'Empty'.
+
+    :return: Single column DataFrame containing three default categories.
+    :rtype: pandas.DataFrame
+    """
     return pd.read_csv(os.path.join(os.path.split(os.path.dirname(__file__))[0], 'etc', 'plate_map_legend.csv'))
