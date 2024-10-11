@@ -1202,203 +1202,183 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox_seq):
                           data={}),
                 dcc.Store(id='store_precursor_data',
                           data={}),
-                dcc.Loading(
-                    dbc.Modal(
-                        [
-                            dbc.ModalHeader(dbc.ModalTitle('Loaded AutoXecute Sequence'), close_button=False),
-                            dbc.ModalBody(get_autox_validation_modal_layout(autox_path_dict)),
-                            dbc.ModalFooter(dbc.Button('Close',
-                                                       id='autox_validation_modal_close',
-                                                       className='ms-auto'))
-                        ],
-                        id='autox_validation_modal',
-                        fullscreen=True,
-                        backdrop='static',
-                        keyboard=False,
-                        scrollable=True,
-                        centered=True,
-                        is_open=True
-                    )
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader(dbc.ModalTitle('Loaded AutoXecute Sequence'), close_button=False),
+                        dbc.ModalBody(get_autox_validation_modal_layout(autox_path_dict)),
+                        dbc.ModalFooter(dbc.Button('Close',
+                                                   id='autox_validation_modal_close',
+                                                   className='ms-auto'))
+                    ],
+                    id='autox_validation_modal',
+                    fullscreen=True,
+                    backdrop='static',
+                    keyboard=False,
+                    scrollable=True,
+                    centered=True,
+                    is_open=True
                 ),
-                dcc.Loading(
-                    dbc.Modal(
-                        [
-                            dbc.ModalHeader(dbc.ModalTitle('Preprocessing Parameters')),
-                            dbc.ModalBody(get_preprocessing_parameters_layout(param_dict)),
-                            dbc.ModalFooter(
-                                dbc.ButtonGroup(
-                                    [
-                                        dbc.Button('Cancel',
-                                                   id='edit_processing_parameters_cancel',
-                                                   className='ms-auto'),
-                                        dbc.Button('Save',
-                                                   id='edit_processing_parameters_save',
-                                                   className='ms-auto')
-                                    ]
-                                )
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader(dbc.ModalTitle('Preprocessing Parameters')),
+                        dbc.ModalBody(get_preprocessing_parameters_layout(param_dict)),
+                        dbc.ModalFooter(
+                            dbc.ButtonGroup(
+                                [
+                                    dbc.Button('Cancel',
+                                               id='edit_processing_parameters_cancel',
+                                               className='ms-auto'),
+                                    dbc.Button('Save',
+                                               id='edit_processing_parameters_save',
+                                               className='ms-auto')
+                                ]
                             )
-                        ],
-                        id='edit_processing_parameters_modal',
-                        fullscreen=True,
-                        backdrop='static',
-                        scrollable=True,
-                        centered=True,
-                        is_open=False
-                    )
+                        )
+                    ],
+                    id='edit_processing_parameters_modal',
+                    fullscreen=True,
+                    backdrop='static',
+                    scrollable=True,
+                    centered=True,
+                    is_open=False
                 ),
-                dcc.Loading(
-                    dbc.Modal(
-                        [
-                            dbc.ModalHeader(dbc.ModalTitle('Preprocessing parameters have been saved.')),
-                            dbc.ModalFooter(dbc.Button('Close',
-                                                       id='edit_processing_parameters_modal_saved_close',
-                                                       className='ms-auto'))
-                        ],
-                        id='edit_processing_parameters_modal_saved',
-                        size='lg',
-                        centered=True,
-                        is_open=False
-                    )
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader(dbc.ModalTitle('Preprocessing parameters have been saved.')),
+                        dbc.ModalFooter(dbc.Button('Close',
+                                                   id='edit_processing_parameters_modal_saved_close',
+                                                   className='ms-auto'))
+                    ],
+                    id='edit_processing_parameters_modal_saved',
+                    size='lg',
+                    centered=True,
+                    is_open=False
                 ),
-                dcc.Loading(
-                    dbc.Modal(
-                        [
-                            dbc.ModalHeader(dbc.ModalTitle('New Group Name')),
-                            dbc.ModalBody(
-                                dbc.InputGroup(
-                                    [
-                                        dbc.InputGroupText('Name'),
-                                        dbc.Input(id='new_group_name_modal_input_value',
-                                                  placeholder='',
-                                                  value='',
-                                                  type='text',
-                                                  invalid=True)
-                                    ],
-                                    id='new_group_name_modal_input',
-                                    style={'margin': '10px',
-                                           'display': 'flex'}
-                                )
-                            ),
-                            dbc.ModalFooter(dbc.Button('Save',
-                                                       id='new_group_name_modal_save',
-                                                       className='ms-auto'))
-                        ],
-                        id='new_group_name_modal',
-                        size='lg',
-                        centered=True,
-                        is_open=False
-                    )
-                ),
-                dcc.Loading(
-                    dbc.Modal(
-                        [
-                            dbc.ModalHeader(dbc.ModalTitle('Error')),
-                            dbc.ModalBody('One or more of the selected spots already belongs to a different group.'),
-                            dbc.ModalFooter(
-                                dbc.Button('Close',
-                                           id='group_spots_error_modal_close',
-                                           className='ms-auto')
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader(dbc.ModalTitle('New Group Name')),
+                        dbc.ModalBody(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupText('Name'),
+                                    dbc.Input(id='new_group_name_modal_input_value',
+                                              placeholder='',
+                                              value='',
+                                              type='text',
+                                              invalid=True)
+                                ],
+                                id='new_group_name_modal_input',
+                                style={'margin': '10px',
+                                       'display': 'flex'}
                             )
-                        ],
-                        id='group_spots_error_modal',
-                        size='lg',
-                        centered=True,
-                        is_open=False
-                    )
+                        ),
+                        dbc.ModalFooter(dbc.Button('Save',
+                                                   id='new_group_name_modal_save',
+                                                   className='ms-auto'))
+                    ],
+                    id='new_group_name_modal',
+                    size='lg',
+                    centered=True,
+                    is_open=False
                 ),
-                dcc.Loading(
-                    dbc.Modal(
-                        [
-                            dbc.ModalHeader(dbc.ModalTitle('Blank Spectra Used to Generate Exclusion List')),
-                            dbc.ModalBody(get_exclusion_list_spectra_layout()),
-                            dbc.ModalFooter(dbc.Button('Close',
-                                                       id='exclusion_list_blank_spectra_modal_close'))
-                        ],
-                        id='exclusion_list_blank_spectra_modal',
-                        fullscreen=True,
-                        backdrop='static',
-                        scrollable=True,
-                        centered=True,
-                        is_open=False
-                    )
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader(dbc.ModalTitle('Error')),
+                        dbc.ModalBody('One or more of the selected spots already belongs to a different group.'),
+                        dbc.ModalFooter(
+                            dbc.Button('Close',
+                                       id='group_spots_error_modal_close',
+                                       className='ms-auto')
+                        )
+                    ],
+                    id='group_spots_error_modal',
+                    size='lg',
+                    centered=True,
+                    is_open=False
                 ),
-                dcc.Loading(
-                    dbc.Modal(
-                        [
-                            dbc.ModalHeader(dbc.ModalTitle('Error')),
-                            dbc.ModalBody(
-                                'Selected CSV file is not valid. Ensure only one column named "m/z" is present.'),
-                            dbc.ModalFooter(dbc.Button('Close',
-                                                       id='exclusion_list_csv_error_modal_close',
-                                                       className='ms-auto'))
-                        ],
-                        id='exclusion_list_csv_error_modal',
-                        size='lg',
-                        centered=True,
-                        is_open=False
-                    )
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader(dbc.ModalTitle('Blank Spectra Used to Generate Exclusion List')),
+                        dbc.ModalBody(get_exclusion_list_spectra_layout()),
+                        dbc.ModalFooter(dbc.Button('Close',
+                                                   id='exclusion_list_blank_spectra_modal_close'))
+                    ],
+                    id='exclusion_list_blank_spectra_modal',
+                    fullscreen=True,
+                    backdrop='static',
+                    scrollable=True,
+                    centered=True,
+                    is_open=False
                 ),
-                dcc.Loading(
-                    dbc.Modal(
-                        [
-                            dbc.ModalHeader(dbc.ModalTitle('Preview Precursor List')),
-                            dbc.ModalBody(get_preview_layout()),
-                            dbc.ModalFooter(
-                                dbc.ButtonGroup(
-                                    [
-                                        dbc.Button('Go Back',
-                                                   id='preview_precursor_list_modal_back',
-                                                   className='ms-auto'),
-                                        dbc.Button('Generate MS/MS AutoXecute Sequence',
-                                                   id='preview_precursor_list_modal_run',
-                                                   className='ms-auto')
-                                    ]
-                                )
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader(dbc.ModalTitle('Error')),
+                        dbc.ModalBody(
+                            'Selected CSV file is not valid. Ensure only one column named "m/z" is present.'),
+                        dbc.ModalFooter(dbc.Button('Close',
+                                                   id='exclusion_list_csv_error_modal_close',
+                                                   className='ms-auto'))
+                    ],
+                    id='exclusion_list_csv_error_modal',
+                    size='lg',
+                    centered=True,
+                    is_open=False
+                ),
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader(dbc.ModalTitle('Preview Precursor List')),
+                        dbc.ModalBody(get_preview_layout()),
+                        dbc.ModalFooter(
+                            dbc.ButtonGroup(
+                                [
+                                    dbc.Button('Go Back',
+                                               id='preview_precursor_list_modal_back',
+                                               className='ms-auto'),
+                                    dbc.Button('Generate MS/MS AutoXecute Sequence',
+                                               id='preview_precursor_list_modal_run',
+                                               className='ms-auto')
+                                ]
                             )
-                        ],
-                        id='preview_precursor_list_modal',
-                        fullscreen=True,
-                        backdrop='static',
-                        scrollable=True,
-                        centered=True,
-                        is_open=False
-                    )
+                        )
+                    ],
+                    id='preview_precursor_list_modal',
+                    fullscreen=True,
+                    backdrop='static',
+                    scrollable=True,
+                    centered=True,
+                    is_open=False
                 ),
-                dcc.Loading(
-                    dbc.Modal(
-                        [
-                            dbc.ModalHeader(dbc.ModalTitle('Generate MS/MS AutoXecute Sequence')),
-                            dbc.ModalBody(get_run_layout(outdir)),
-                            dbc.ModalFooter(
-                                dbc.Button('Run',
-                                           id='run_button',
-                                           className='ms-auto')
-                            )
-                        ],
-                        id='run_modal',
-                        fullscreen=True,
-                        backdrop='static',
-                        scrollable=True,
-                        centered=True,
-                        is_open=False
-                    )
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader(dbc.ModalTitle('Generate MS/MS AutoXecute Sequence')),
+                        dbc.ModalBody(get_run_layout(outdir)),
+                        dbc.ModalFooter(
+                            dbc.Button('Run',
+                                       id='run_button',
+                                       className='ms-auto')
+                        )
+                    ],
+                    id='run_modal',
+                    fullscreen=True,
+                    backdrop='static',
+                    scrollable=True,
+                    centered=True,
+                    is_open=False
                 ),
-                dcc.Loading(
-                    dbc.Modal(
-                        [
-                            dbc.ModalHeader(dbc.ModalTitle('Success')),
-                            dbc.ModalBody(f'The MS/MS AutoXecute sequence has been created in {outdir}.'),
-                            dbc.ModalFooter(
-                                dbc.Button('Close',
-                                           id='run_success_close',
-                                           className='ms-auto')
-                            )
-                        ],
-                        id='run_success_modal',
-                        size='lg',
-                        centered=True,
-                        is_open=False
-                    )
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader(dbc.ModalTitle('Success')),
+                        dbc.ModalBody(f'The MS/MS AutoXecute sequence has been created in {outdir}.'),
+                        dbc.ModalFooter(
+                            dbc.Button('Close',
+                                       id='run_success_close',
+                                       className='ms-auto')
+                        )
+                    ],
+                    id='run_success_modal',
+                    size='lg',
+                    centered=True,
+                    is_open=False
                 )
             ],
             className='row',
