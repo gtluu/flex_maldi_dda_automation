@@ -28,9 +28,9 @@ from plotly_resampler import FigureResampler
 
 from pymaldiproc.data_import import import_timstof_raw_data
 from pymaldiproc.preprocessing import get_feature_matrix
+from pymaldiviz.tmpdir import *
 from pymaldiviz.util import *
 
-from msms_autox_generator.tmpdir import *
 from msms_autox_generator.layout import *
 from msms_autox_generator.util import *
 

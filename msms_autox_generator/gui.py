@@ -10,6 +10,7 @@ import pandas as pd
 from lxml import etree as et
 from pymaldiproc.data_import import import_timstof_raw_data
 from pymaldiproc.preprocessing import get_feature_matrix
+from pymaldiviz.tmpdir import FILE_SYSTEM_BACKEND
 from pymaldiviz.util import (blank_figure, get_spectrum, SHOWN, HIDDEN, toggle_rebin_style, toggle_apodization_style,
                              toggle_cwt_style, toggle_snip_style, toggle_locmax_style, toggle_tophat_style,
                              toggle_smoothing_median_style, toggle_modpoly_style, toggle_imodpoly_style,
@@ -20,7 +21,6 @@ from msms_autox_generator.layout import get_dashboard_layout
 from msms_autox_generator.util import (get_autox_sequence_filename, get_maldi_dda_preprocessing_params,
                                        get_geometry_format, get_autox_path_dict, get_path_name, get_rgb_color,
                                        get_plate_map, get_plate_map_legend, get_plate_map_style)
-from msms_autox_generator.tmpdir import FILE_SYSTEM_BACKEND
 from dash import State, callback_context, no_update, MATCH, ALL
 from dash_extensions.enrich import (Input, Output, DashProxy, MultiplexerTransform, Serverside,
                                     ServersideOutputTransform, FileSystemBackend)
@@ -566,7 +566,7 @@ def update_blank_spectrum(value, blank_spots, blank_params_log, indexed_data):
     # peak picking
     blank_spectrum.peak_picking(**blank_params_log['PEAK_PICKING'])
     fig = get_spectrum(blank_spectrum, label_peaks=True)
-    cleanup_file_system_backend()
+    cleanup_file_system_backend(FILE_SYSTEM_BACKEND)
     return fig, Serverside(fig)
 
 
@@ -1480,7 +1480,7 @@ def update_preview_spectrum(value, indexed_data, sample_params_log, precursor_da
     else:
         label_peaks = True
     fig = get_spectrum(spectrum, label_peaks=label_peaks)
-    cleanup_file_system_backend()
+    cleanup_file_system_backend(FILE_SYSTEM_BACKEND)
     return fig, Serverside(fig)
 
 
