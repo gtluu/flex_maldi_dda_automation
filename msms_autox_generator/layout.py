@@ -2,9 +2,13 @@
 # For more infromation, see: https://github.com/gtluu/pyMALDIproc
 
 
+import os
+from lxml import etree as et
 from dash import dcc, html, dash_table
 import dash_bootstrap_components as dbc
-from msms_autox_generator.util import *
+from pymaldiviz.util import blank_figure
+from msms_autox_generator.util import (get_plate_map, get_plate_map_legend, get_plate_map_style,
+                                       get_maldi_dda_preprocessing_params, get_geometry_format, get_autox_path_dict)
 
 
 def get_preprocessing_parameters_layout(param_dict):

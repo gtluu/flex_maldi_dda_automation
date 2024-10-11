@@ -2,18 +2,32 @@
 # For more infromation, see: https://github.com/gtluu/pyMALDIproc
 
 
+import os
+import copy
 import toml
+import numpy as np
+import pandas as pd
+from lxml import etree as et
 from pymaldiproc.data_import import import_timstof_raw_data
 from pymaldiproc.preprocessing import get_feature_matrix
-from pymaldiviz.util import *
-from msms_autox_generator.layout import *
-from msms_autox_generator.util import *
+from pymaldiviz.util import (blank_figure, get_spectrum, SHOWN, HIDDEN, toggle_rebin_style, toggle_apodization_style,
+                             toggle_cwt_style, toggle_snip_style, toggle_locmax_style, toggle_tophat_style,
+                             toggle_smoothing_median_style, toggle_modpoly_style, toggle_imodpoly_style,
+                             toggle_zhangfit_style, toggle_deisotope_on_style, toggle_deisotope_off_style,
+                             toggle_fast_change_style, toggle_savitzky_golay_style, toggle_removal_median_style,
+                             cleanup_file_system_backend)
+from msms_autox_generator.layout import get_dashboard_layout
+from msms_autox_generator.util import (get_autox_sequence_filename, get_maldi_dda_preprocessing_params,
+                                       get_geometry_format, get_autox_path_dict, get_path_name, get_rgb_color,
+                                       get_plate_map, get_plate_map_legend, get_plate_map_style)
 from msms_autox_generator.tmpdir import FILE_SYSTEM_BACKEND
 from dash import State, callback_context, no_update, MATCH, ALL
 from dash_extensions.enrich import (Input, Output, DashProxy, MultiplexerTransform, Serverside,
                                     ServersideOutputTransform, FileSystemBackend)
 import dash_bootstrap_components as dbc
 from plotly_resampler import FigureResampler
+import tkinter
+from tkinter.filedialog import askopenfilename
 
 # get AutoXecute sequence path
 AUTOX_SEQ = get_autox_sequence_filename()
@@ -551,7 +565,7 @@ def update_blank_spectrum(value, blank_spots, blank_params_log, indexed_data):
         blank_spectrum.bin_spectrum(**blank_params_log['BIN_SPECTRUM'])
     # peak picking
     blank_spectrum.peak_picking(**blank_params_log['PEAK_PICKING'])
-    fig = get_spectrum(blank_spectrum)
+    fig = get_spectrum(blank_spectrum, label_peaks=True)
     cleanup_file_system_backend()
     return fig, Serverside(fig)
 
@@ -1465,7 +1479,7 @@ def update_preview_spectrum(value, indexed_data, sample_params_log, precursor_da
         label_peaks = False
     else:
         label_peaks = True
-    fig = get_spectrum(spectrum, label_peaks)
+    fig = get_spectrum(spectrum, label_peaks=label_peaks)
     cleanup_file_system_backend()
     return fig, Serverside(fig)
 
