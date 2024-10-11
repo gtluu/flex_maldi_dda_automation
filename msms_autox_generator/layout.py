@@ -812,7 +812,6 @@ def get_preprocessing_parameters_layout(param_dict):
             remove_baseline_parameters,
             normalize_intensity_parameters,
             bin_spectrum_parameters,
-            # align_spectra_parameters,
             peak_picking_parameters,
             precursor_selection_parameters]
 
@@ -994,46 +993,7 @@ def get_exclusion_list_layout():
 
     :return: List of divs containing the layout for the exclusion list section of the main dashboard.
     """
-    return [
-        dash_table.DataTable(
-            data=[],
-            columns=[{'name': 'm/z', 'id': 'm/z'}],
-            id='exclusion_list',
-            row_deletable=True,
-            style_header={'textAlign': 'center'},
-            style_cell={'textAlign': 'center'},
-            style_data_conditional=[],
-            page_size=10
-        ),
-        html.Div(
-            [
-                dbc.Button(
-                    'Generate Exclusion List from Blank Spots',
-                    id='generate_exclusion_list_from_blank_spots',
-                    style={'margin': '20px'}
-                ),
-                dbc.Button(
-                    'View Blank Spectra Used to Generate Exclusion List',
-                    id='view_exclusion_list_spectra',
-                    style={'margin': '20px',
-                           'display': 'none'}
-                ),
-                dbc.Button(
-                    'Upload Exclusion List from CSV',
-                    id='upload_exclusion_list_from_csv',
-                    style={'margin': '20px'}
-                ),
-                dbc.Button(
-                    'Clear Exclusion List',
-                    id='clear_exclusion_list',
-                    style={'margin': '20px'}
-                )
-            ],
-            id='exclusion_list_buttons_div',
-            style={'justify-content': 'center',
-                   'display': 'flex'}
-        )
-    ]
+    return
 
 
 def get_exclusion_list_spectra_layout():
@@ -1056,7 +1016,7 @@ def get_exclusion_list_spectra_layout():
             id='exclusion_list_blank_spectra_figure',
             figure=blank_figure(),
             style={'width': '100%',
-                   'height': '600px'}
+                   'height': '1000px'}
         )
     ]
 
@@ -1080,7 +1040,7 @@ def get_preview_layout():
             id='preview_figure',
             figure=blank_figure(),
             style={'width': '100%',
-                   'height': '600px'}
+                   'height': '1000px'}
         )
     ]
 
@@ -1100,293 +1060,379 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox_seq):
     outdir = autox.attrib['directory']
     plate_map_df = get_plate_map(plate_format)
     plate_map_legend_df = get_plate_map_legend()
-    return dcc.Loading(
-        html.Div(
-            [
-                html.Div(
-                    [
-                        dash_table.DataTable(
-                            plate_map_df.to_dict('records'),
-                            columns=[{'name': str(col), 'id': str(col)} for col in plate_map_df.columns],
-                            id='plate_map',
-                            style_header={'display': 'none',
-                                          'textAlign': 'center'},
-                            style_cell={'textAlign': 'center'},
-                            style_data_conditional=get_plate_map_style(plate_map_df, autox)
-                        ),
-                        dash_table.DataTable(
-                            plate_map_legend_df.to_dict('records'),
-                            columns=[{'name': str(col), 'id': str(col)} for col in plate_map_legend_df.columns],
-                            id='plate_map_legend',
-                            style_header={'display': 'none',
-                                          'textAlign': 'center'},
-                            style_cell={'textAlign': 'center'},
-                            style_data_conditional=[{'if': {'row_index': 1},
-                                                     'backgroundColor': 'green', 'color': 'white'},
-                                                    {'if': {'row_index': 2},
-                                                     'backgroundColor': 'gray', 'color': 'white'}]
-                        ),
-                        html.Div(
-                            [
+    return html.Div(
+        [
+            dcc.Loading(
+                [
+                    dbc.Row(
+                        [
+                            dbc.Col(
+                                dash_table.DataTable(
+                                    plate_map_df.to_dict('records'),
+                                    columns=[{'name': str(col), 'id': str(col)} for col in plate_map_df.columns],
+                                    id='plate_map',
+                                    style_header={'display': 'none',
+                                                  'textAlign': 'center'},
+                                    style_cell={'textAlign': 'center'},
+                                    style_data_conditional=get_plate_map_style(plate_map_df, autox)
+                                ),
+                                width=9
+                            ),
+                            dbc.Col(
+                                dash_table.DataTable(
+                                    plate_map_legend_df.to_dict('records'),
+                                    columns=[{'name': str(col), 'id': str(col)} for col in
+                                             plate_map_legend_df.columns],
+                                    id='plate_map_legend',
+                                    style_header={'display': 'none',
+                                                  'textAlign': 'center'},
+                                    style_cell={'textAlign': 'center'},
+                                    style_data_conditional=[{'if': {'row_index': 1},
+                                                             'backgroundColor': 'green', 'color': 'white'},
+                                                            {'if': {'row_index': 2},
+                                                             'backgroundColor': 'gray', 'color': 'white'}]
+                                ),
+                                width=1
+                            ),
+                            dbc.Col(
+                                dash_table.DataTable(
+                                    data=[],
+                                    columns=[{'name': 'm/z', 'id': 'm/z'}],
+                                    id='exclusion_list',
+                                    row_deletable=True,
+                                    style_header={'textAlign': 'center'},
+                                    style_cell={'textAlign': 'center'},
+                                    style_data_conditional=[],
+                                    page_size=10
+                                ),
+                                width=2
+                            )
+                        ]
+                    ),
+                    dbc.Row(
+                        [
+                            dbc.Col(
                                 dbc.Button(
                                     'Group Selected Spots',
                                     id='group_spots',
-                                    style={'margin': '20px'}
+                                    style={'margin': '20px',
+                                           'display': 'flex',
+                                           'justify-content': 'center',
+                                           'width': '95%'}
                                 ),
+                                width=3
+                            ),
+                            dbc.Col(
                                 dbc.Button(
                                     'Mark Selected Spots as Blank',
                                     id='mark_spot_as_blank',
-                                    style={'margin': '20px'}
+                                    style={'margin': '20px',
+                                           'display': 'flex',
+                                           'justify-content': 'center',
+                                           'width': '95%'}
                                 ),
+                                width=3
+                            ),
+                            dbc.Col(
                                 dbc.Button(
                                     'Clear Selected Groups',
                                     id='clear_selected_groups',
-                                    style={'margin': '20px'}
+                                    style={'margin': '20px',
+                                           'display': 'flex',
+                                           'justify-content': 'center',
+                                           'width': '95%'}
                                 ),
+                                width=3
+                            ),
+                            dbc.Col(
                                 dbc.Button(
                                     'Clear All Blank Spots and Spot Groups',
                                     id='clear_blanks_and_groups',
-                                    style={'margin': '20px'}
+                                    style={'margin': '20px',
+                                           'display': 'flex',
+                                           'justify-content': 'center',
+                                           'width': '95%'}
+                                ),
+                                width=3
+                            )
+                        ]
+                    ),
+                    dbc.Row(
+                        [
+                            dbc.Col(
+                                dbc.Button(
+                                    'Generate Exclusion List from Blank Spots',
+                                    id='generate_exclusion_list_from_blank_spots',
+                                    style={'margin': '20px',
+                                           'display': 'flex',
+                                           'justify-content': 'center',
+                                           'width': '95%'}
+                                ),
+                                width=3
+                            ),
+                            dbc.Col(
+                                dbc.Button(
+                                    'View Blank Spectra Used to Generate Exclusion List',
+                                    id='view_exclusion_list_spectra',
+                                    style={'margin': '20px',
+                                           'display': 'none',
+                                           'justify-content': 'center',
+                                           'width': '95%'}
+                                ),
+                                width=3
+                            ),
+                            dbc.Col(
+                                dbc.Button(
+                                    'Upload Exclusion List from CSV',
+                                    id='upload_exclusion_list_from_csv',
+                                    style={'margin': '20px',
+                                           'display': 'flex',
+                                           'justify-content': 'center',
+                                           'width': '95%'}
+                                ),
+                                width=3
+                            ),
+                            dbc.Col(
+                                dbc.Button(
+                                    'Clear Exclusion List',
+                                    id='clear_exclusion_list',
+                                    style={'margin': '20px',
+                                           'display': 'flex',
+                                           'justify-content': 'center',
+                                           'width': '95%'}
+                                ),
+                                width=3
+                            )
+                        ]
+                    ),
+                    dbc.Row(
+                        [
+                            dbc.Col(
+                                dbc.Button(
+                                    'Edit Preprocessing Parameters',
+                                    id='edit_preprocessing_parameters',
+                                    style={'margin': '20px',
+                                           'display': 'flex',
+                                           'justify-content': 'center',
+                                           'width': '95%'}
+                                ),
+                                width={'size': 3, 'offset': 3}
+                            ),
+                            dbc.Col(
+                                dbc.Button(
+                                    'Preview Precursor List',
+                                    id='preview_precursor_list',
+                                    style={'margin': '20px',
+                                           'display': 'flex',
+                                           'justify-content': 'center',
+                                           'width': '95%'}
+                                ),
+                                width=3
+                            )
+                        ]
+                    ),
+                    dbc.Modal(
+                        [
+                            dbc.ModalHeader(dbc.ModalTitle('Loaded AutoXecute Sequence'), close_button=False),
+                            dbc.ModalBody(get_autox_validation_modal_layout(autox_path_dict)),
+                            dbc.ModalFooter(dbc.Button('Close',
+                                                       id='autox_validation_modal_close',
+                                                       className='ms-auto'))
+                        ],
+                        id='autox_validation_modal',
+                        fullscreen=True,
+                        backdrop='static',
+                        keyboard=False,
+                        scrollable=True,
+                        centered=True,
+                        is_open=True
+                    ),
+                    dbc.Modal(
+                        [
+                            dbc.ModalHeader(dbc.ModalTitle('Preprocessing Parameters')),
+                            dbc.ModalBody(get_preprocessing_parameters_layout(param_dict)),
+                            dbc.ModalFooter(
+                                dbc.ButtonGroup(
+                                    [
+                                        dbc.Button('Cancel',
+                                                   id='edit_processing_parameters_cancel',
+                                                   className='ms-auto'),
+                                        dbc.Button('Save',
+                                                   id='edit_processing_parameters_save',
+                                                   className='ms-auto')
+                                    ]
                                 )
-                            ],
-                            id='plate_map_buttons_div',
-                            style={'justify-content': 'center',
-                                   'display': 'flex'}
-                        )
-                    ],
-                    id='plate_map_div',
-                    className='one column',
-                    style={'width': '97%',
-                           'margin': '20px'}
-                ),
-                html.Div(
-                    get_exclusion_list_layout(),
-                    id='exclusion_list_div',
-                    className='one column',
-                    style={'width': '97%',
-                           'margin': '20px'}
-                ),
-                html.Div(
-                    [
-                        dbc.Button('Edit Preprocessing Parameters',
-                                   id='edit_preprocessing_parameters',
-                                   style={'margin': '20px'}),
-                        dbc.Button('Preview Precursor List',
-                                   id='preview_precursor_list',
-                                   style={'margin': '20px'})
-                    ],
-                    id='precursor_processing_div',
-                    style={'justify-content': 'center',
-                           'display': 'flex'}
-                ),
-                html.Div(
-                    id='spectrum',
-                    className='one column',
-                    style={'width': '97%',
-                           'margin': '20px'}
-                ),
-                dcc.Store(id='store_plot'),
-                dcc.Store(id='store_preprocessing_params',
-                          data=get_maldi_dda_preprocessing_params()),
-                dcc.Store(id='store_blank_params_log',
-                          data={}),
-                dcc.Store(id='store_sample_params_log',
-                          data={}),
-                dcc.Store(id='store_autox_seq',
-                          data=autox_seq),
-                dcc.Store(id='store_plate_format',
-                          data=get_geometry_format(et.parse(autox_seq).getroot())),
-                dcc.Store(id='store_autox_path_dict',
-                          data=get_autox_path_dict(autox_seq)),
-                dcc.Store(id='store_blank_spots',
-                          data={'spots': []}),
-                dcc.Store(id='store_spot_groups',
-                          data={}),
-                dcc.Store(id='store_indexed_data',
-                          data={}),
-                dcc.Store(id='store_precursor_data',
-                          data={}),
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle('Loaded AutoXecute Sequence'), close_button=False),
-                        dbc.ModalBody(get_autox_validation_modal_layout(autox_path_dict)),
-                        dbc.ModalFooter(dbc.Button('Close',
-                                                   id='autox_validation_modal_close',
-                                                   className='ms-auto'))
-                    ],
-                    id='autox_validation_modal',
-                    fullscreen=True,
-                    backdrop='static',
-                    keyboard=False,
-                    scrollable=True,
-                    centered=True,
-                    is_open=True
-                ),
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle('Preprocessing Parameters')),
-                        dbc.ModalBody(get_preprocessing_parameters_layout(param_dict)),
-                        dbc.ModalFooter(
-                            dbc.ButtonGroup(
-                                [
-                                    dbc.Button('Cancel',
-                                               id='edit_processing_parameters_cancel',
-                                               className='ms-auto'),
-                                    dbc.Button('Save',
-                                               id='edit_processing_parameters_save',
-                                               className='ms-auto')
-                                ]
                             )
-                        )
-                    ],
-                    id='edit_processing_parameters_modal',
-                    fullscreen=True,
-                    backdrop='static',
-                    scrollable=True,
-                    centered=True,
-                    is_open=False
-                ),
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle('Preprocessing parameters have been saved.')),
-                        dbc.ModalFooter(dbc.Button('Close',
-                                                   id='edit_processing_parameters_modal_saved_close',
-                                                   className='ms-auto'))
-                    ],
-                    id='edit_processing_parameters_modal_saved',
-                    size='lg',
-                    centered=True,
-                    is_open=False
-                ),
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle('New Group Name')),
-                        dbc.ModalBody(
-                            dbc.InputGroup(
-                                [
-                                    dbc.InputGroupText('Name'),
-                                    dbc.Input(id='new_group_name_modal_input_value',
-                                              placeholder='',
-                                              value='',
-                                              type='text',
-                                              invalid=True)
-                                ],
-                                id='new_group_name_modal_input',
-                                style={'margin': '10px',
-                                       'display': 'flex'}
+                        ],
+                        id='edit_processing_parameters_modal',
+                        fullscreen=True,
+                        backdrop='static',
+                        scrollable=True,
+                        centered=True,
+                        is_open=False
+                    ),
+                    dbc.Modal(
+                        [
+                            dbc.ModalHeader(dbc.ModalTitle('Preprocessing parameters have been saved.')),
+                            dbc.ModalFooter(dbc.Button('Close',
+                                                       id='edit_processing_parameters_modal_saved_close',
+                                                       className='ms-auto'))
+                        ],
+                        id='edit_processing_parameters_modal_saved',
+                        size='lg',
+                        centered=True,
+                        is_open=False
+                    ),
+                    dbc.Modal(
+                        [
+                            dbc.ModalHeader(dbc.ModalTitle('New Group Name')),
+                            dbc.ModalBody(
+                                dbc.InputGroup(
+                                    [
+                                        dbc.InputGroupText('Name'),
+                                        dbc.Input(id='new_group_name_modal_input_value',
+                                                  placeholder='',
+                                                  value='',
+                                                  type='text',
+                                                  invalid=True)
+                                    ],
+                                    id='new_group_name_modal_input',
+                                    style={'margin': '10px',
+                                           'display': 'flex'}
+                                )
+                            ),
+                            dbc.ModalFooter(dbc.Button('Save',
+                                                       id='new_group_name_modal_save',
+                                                       className='ms-auto'))
+                        ],
+                        id='new_group_name_modal',
+                        size='lg',
+                        centered=True,
+                        is_open=False
+                    ),
+                    dbc.Modal(
+                        [
+                            dbc.ModalHeader(dbc.ModalTitle('Error')),
+                            dbc.ModalBody(
+                                'One or more of the selected spots already belongs to a different group.'),
+                            dbc.ModalFooter(
+                                dbc.Button('Close',
+                                           id='group_spots_error_modal_close',
+                                           className='ms-auto')
                             )
-                        ),
-                        dbc.ModalFooter(dbc.Button('Save',
-                                                   id='new_group_name_modal_save',
-                                                   className='ms-auto'))
-                    ],
-                    id='new_group_name_modal',
-                    size='lg',
-                    centered=True,
-                    is_open=False
-                ),
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle('Error')),
-                        dbc.ModalBody('One or more of the selected spots already belongs to a different group.'),
-                        dbc.ModalFooter(
-                            dbc.Button('Close',
-                                       id='group_spots_error_modal_close',
-                                       className='ms-auto')
-                        )
-                    ],
-                    id='group_spots_error_modal',
-                    size='lg',
-                    centered=True,
-                    is_open=False
-                ),
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle('Blank Spectra Used to Generate Exclusion List')),
-                        dbc.ModalBody(get_exclusion_list_spectra_layout()),
-                        dbc.ModalFooter(dbc.Button('Close',
-                                                   id='exclusion_list_blank_spectra_modal_close'))
-                    ],
-                    id='exclusion_list_blank_spectra_modal',
-                    fullscreen=True,
-                    backdrop='static',
-                    scrollable=True,
-                    centered=True,
-                    is_open=False
-                ),
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle('Error')),
-                        dbc.ModalBody(
-                            'Selected CSV file is not valid. Ensure only one column named "m/z" is present.'),
-                        dbc.ModalFooter(dbc.Button('Close',
-                                                   id='exclusion_list_csv_error_modal_close',
-                                                   className='ms-auto'))
-                    ],
-                    id='exclusion_list_csv_error_modal',
-                    size='lg',
-                    centered=True,
-                    is_open=False
-                ),
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle('Preview Precursor List')),
-                        dbc.ModalBody(get_preview_layout()),
-                        dbc.ModalFooter(
-                            dbc.ButtonGroup(
-                                [
-                                    dbc.Button('Go Back',
-                                               id='preview_precursor_list_modal_back',
-                                               className='ms-auto'),
-                                    dbc.Button('Generate MS/MS AutoXecute Sequence',
-                                               id='preview_precursor_list_modal_run',
-                                               className='ms-auto')
-                                ]
+                        ],
+                        id='group_spots_error_modal',
+                        size='lg',
+                        centered=True,
+                        is_open=False
+                    ),
+                    dbc.Modal(
+                        [
+                            dbc.ModalHeader(dbc.ModalTitle('Blank Spectra Used to Generate Exclusion List')),
+                            dbc.ModalBody(get_exclusion_list_spectra_layout()),
+                            dbc.ModalFooter(dbc.Button('Close',
+                                                       id='exclusion_list_blank_spectra_modal_close'))
+                        ],
+                        id='exclusion_list_blank_spectra_modal',
+                        fullscreen=True,
+                        backdrop='static',
+                        scrollable=True,
+                        centered=True,
+                        is_open=False
+                    ),
+                    dbc.Modal(
+                        [
+                            dbc.ModalHeader(dbc.ModalTitle('Error')),
+                            dbc.ModalBody(
+                                'Selected CSV file is not valid. Ensure only one column named "m/z" is present.'),
+                            dbc.ModalFooter(dbc.Button('Close',
+                                                       id='exclusion_list_csv_error_modal_close',
+                                                       className='ms-auto'))
+                        ],
+                        id='exclusion_list_csv_error_modal',
+                        size='lg',
+                        centered=True,
+                        is_open=False
+                    ),
+                    dbc.Modal(
+                        [
+                            dbc.ModalHeader(dbc.ModalTitle('Preview Precursor List')),
+                            dbc.ModalBody(get_preview_layout()),
+                            dbc.ModalFooter(
+                                dbc.ButtonGroup(
+                                    [
+                                        dbc.Button('Go Back',
+                                                   id='preview_precursor_list_modal_back',
+                                                   className='ms-auto'),
+                                        dbc.Button('Generate MS/MS AutoXecute Sequence',
+                                                   id='preview_precursor_list_modal_run',
+                                                   className='ms-auto')
+                                    ]
+                                )
                             )
-                        )
-                    ],
-                    id='preview_precursor_list_modal',
-                    fullscreen=True,
-                    backdrop='static',
-                    scrollable=True,
-                    centered=True,
-                    is_open=False
-                ),
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle('Generate MS/MS AutoXecute Sequence')),
-                        dbc.ModalBody(get_run_layout(outdir)),
-                        dbc.ModalFooter(
-                            dbc.Button('Run',
-                                       id='run_button',
-                                       className='ms-auto')
-                        )
-                    ],
-                    id='run_modal',
-                    fullscreen=True,
-                    backdrop='static',
-                    scrollable=True,
-                    centered=True,
-                    is_open=False
-                ),
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle('Success')),
-                        dbc.ModalBody(f'The MS/MS AutoXecute sequence has been created in {outdir}.'),
-                        dbc.ModalFooter(
-                            dbc.Button('Close',
-                                       id='run_success_close',
-                                       className='ms-auto')
-                        )
-                    ],
-                    id='run_success_modal',
-                    size='lg',
-                    centered=True,
-                    is_open=False
-                )
-            ],
-            className='row',
-            style={'justify-content': 'center',
-                   'display': 'flex'}
-        )
+                        ],
+                        id='preview_precursor_list_modal',
+                        fullscreen=True,
+                        backdrop='static',
+                        scrollable=True,
+                        centered=True,
+                        is_open=False
+                    ),
+                    dbc.Modal(
+                        [
+                            dbc.ModalHeader(dbc.ModalTitle('Generate MS/MS AutoXecute Sequence')),
+                            dbc.ModalBody(get_run_layout(outdir)),
+                            dbc.ModalFooter(
+                                dbc.Button('Run',
+                                           id='run_button',
+                                           className='ms-auto')
+                            )
+                        ],
+                        id='run_modal',
+                        fullscreen=True,
+                        backdrop='static',
+                        scrollable=True,
+                        centered=True,
+                        is_open=False
+                    ),
+                    dbc.Modal(
+                        [
+                            dbc.ModalHeader(dbc.ModalTitle('Success')),
+                            dbc.ModalBody(f'The MS/MS AutoXecute sequence has been created in {outdir}.'),
+                            dbc.ModalFooter(
+                                dbc.Button('Close',
+                                           id='run_success_close',
+                                           className='ms-auto')
+                            )
+                        ],
+                        id='run_success_modal',
+                        size='lg',
+                        centered=True,
+                        is_open=False
+                    ),
+                    dcc.Store(id='store_plot'),
+                    dcc.Store(id='store_preprocessing_params',
+                              data=get_maldi_dda_preprocessing_params()),
+                    dcc.Store(id='store_blank_params_log',
+                              data={}),
+                    dcc.Store(id='store_sample_params_log',
+                              data={}),
+                    dcc.Store(id='store_autox_seq',
+                              data=autox_seq),
+                    dcc.Store(id='store_plate_format',
+                              data=get_geometry_format(et.parse(autox_seq).getroot())),
+                    dcc.Store(id='store_autox_path_dict',
+                              data=get_autox_path_dict(autox_seq)),
+                    dcc.Store(id='store_blank_spots',
+                              data={'spots': []}),
+                    dcc.Store(id='store_spot_groups',
+                              data={}),
+                    dcc.Store(id='store_indexed_data',
+                              data={}),
+                    dcc.Store(id='store_precursor_data',
+                              data={})
+                ]
+            )
+        ],
+        style={'margin': '20px'}
     )

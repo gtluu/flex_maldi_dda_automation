@@ -55,7 +55,6 @@ def get_maldi_dda_preprocessing_params():
     params_dict['REMOVE_BASELINE']['run'] = False
     params_dict['NORMALIZE_INTENSITY']['run'] = False
     params_dict['BIN_SPECTRUM']['run'] = False
-    params_dict['PEAK_PICKING']['run'] = False
     params_dict['PRECURSOR_SELECTION'] = {'top_n': 10,
                                           'use_exclusion_list': True,
                                           'exclusion_list_tolerance': 0.05}
