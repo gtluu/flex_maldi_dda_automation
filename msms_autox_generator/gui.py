@@ -8,6 +8,7 @@ import toml
 import numpy as np
 import pandas as pd
 from lxml import etree as et
+from pymaldiproc.classes import PMP3DTdfSpectrum
 from pymaldiproc.data_import import import_timstof_raw_data
 from pymaldiproc.preprocessing import get_feature_matrix
 from pymaldiviz.tmpdir import FILE_SYSTEM_BACKEND
@@ -16,7 +17,7 @@ from pymaldiviz.util import (blank_figure, get_spectrum, SHOWN, HIDDEN, toggle_r
                              toggle_smoothing_median_style, toggle_modpoly_style, toggle_imodpoly_style,
                              toggle_zhangfit_style, toggle_deisotope_on_style, toggle_deisotope_off_style,
                              toggle_fast_change_style, toggle_savitzky_golay_style, toggle_removal_median_style,
-                             cleanup_file_system_backend)
+                             cleanup_file_system_backend, get_peakmap)
 from msms_autox_generator.layout import get_dashboard_layout
 from msms_autox_generator.util import (get_autox_sequence_filename, get_maldi_dda_preprocessing_params,
                                        get_geometry_format, get_autox_path_dict, get_path_name, get_rgb_color,
@@ -410,14 +411,16 @@ def clear_all_blanks_and_groups(n_clicks, plate_format, autox_seq):
                 {})
 
 
-@ app.callback([Output('exclusion_list', 'data'),
-                Output('view_exclusion_list_spectra', 'style'),
-                Output('store_blank_params_log', 'data')],
-               [Input('generate_exclusion_list_from_blank_spots', 'n_clicks'),
-                Input('store_preprocessing_params', 'data'),
-                Input('store_blank_spots', 'data'),
-                Input('store_indexed_data', 'data')])
-def generate_exclusion_list_from_blank_spots(n_clicks, preprocessing_params, blank_spots, indexed_data):
+@app.callback([Output('exclusion_list', 'data'),
+               Output('view_exclusion_list_spectra', 'style'),
+               Output('store_blank_params_log', 'data'),
+               Output('exclusion_list_3d_data_error_modal', 'is_open')],
+              [Input('generate_exclusion_list_from_blank_spots', 'n_clicks'),
+               Input('store_preprocessing_params', 'data'),
+               Input('store_blank_spots', 'data'),
+               Input('store_indexed_data', 'data')],
+              State('exclusion_list_3d_data_error_modal', 'is_open'))
+def generate_exclusion_list_from_blank_spots(n_clicks, preprocessing_params, blank_spots, indexed_data, is_open):
     """
     Dash callback to perform preprocessing using parameters defined in the Edit Preprocessing Parameters modal window
     on blank spots marked on the plate map and generate an exclusion list to be displayed in the exclusion list table
@@ -436,41 +439,63 @@ def generate_exclusion_list_from_blank_spots(n_clicks, preprocessing_params, bla
         for spot in blank_spots['spots']:
             data = import_timstof_raw_data(indexed_data[spot], mode='profile')
             blank_spectra = blank_spectra + [spectrum for spectrum in data if spectrum.coord == spot]
-        params = copy.deepcopy(preprocessing_params)
-        blank_params_log = copy.deepcopy(preprocessing_params)
-        # preprocessing
-        if params['TRIM_SPECTRUM']['run']:
-            del params['TRIM_SPECTRUM']['run']
+        if any([isinstance(i, PMP3DTdfSpectrum) for i in blank_spectra]):
+            return ([], {'margin': '20px', 'display': 'flex', 'justify-content': 'center', 'width': '95%'}, {},
+                    not is_open)
+        else:
+            params = copy.deepcopy(preprocessing_params)
+            blank_params_log = copy.deepcopy(preprocessing_params)
+            # preprocessing
+            if params['TRIM_SPECTRUM']['run']:
+                del params['TRIM_SPECTRUM']['run']
+                for spectrum in blank_spectra:
+                    spectrum.trim_spectrum(**params['TRIM_SPECTRUM'])
+            if params['TRANSFORM_INTENSITY']['run']:
+                del params['TRANSFORM_INTENSITY']['run']
+                for spectrum in blank_spectra:
+                    spectrum.transform_intensity(**params['TRANSFORM_INTENSITY'])
+            if params['SMOOTH_BASELINE']['run']:
+                del params['SMOOTH_BASELINE']['run']
+                for spectrum in blank_spectra:
+                    spectrum.smooth_baseline(**params['SMOOTH_BASELINE'])
+            if params['REMOVE_BASELINE']['run']:
+                del params['REMOVE_BASELINE']['run']
+                for spectrum in blank_spectra:
+                    spectrum.remove_baseline(**params['REMOVE_BASELINE'])
+            if params['NORMALIZE_INTENSITY']['run']:
+                del params['NORMALIZE_INTENSITY']['run']
+                for spectrum in blank_spectra:
+                    spectrum.normalize_intensity(**params['NORMALIZE_INTENSITY'])
+            if params['BIN_SPECTRUM']['run']:
+                del params['BIN_SPECTRUM']['run']
+                for spectrum in blank_spectra:
+                    spectrum.bin_spectrum(**params['BIN_SPECTRUM'])
+            # peak picking
             for spectrum in blank_spectra:
-                spectrum.trim_spectrum(**params['TRIM_SPECTRUM'])
-        if params['TRANSFORM_INTENSITY']['run']:
-            del params['TRANSFORM_INTENSITY']['run']
-            for spectrum in blank_spectra:
-                spectrum.transform_intensity(**params['TRANSFORM_INTENSITY'])
-        if params['SMOOTH_BASELINE']['run']:
-            del params['SMOOTH_BASELINE']['run']
-            for spectrum in blank_spectra:
-                spectrum.smooth_baseline(**params['SMOOTH_BASELINE'])
-        if params['REMOVE_BASELINE']['run']:
-            del params['REMOVE_BASELINE']['run']
-            for spectrum in blank_spectra:
-                spectrum.remove_baseline(**params['REMOVE_BASELINE'])
-        if params['NORMALIZE_INTENSITY']['run']:
-            del params['NORMALIZE_INTENSITY']['run']
-            for spectrum in blank_spectra:
-                spectrum.normalize_intensity(**params['NORMALIZE_INTENSITY'])
-        if params['BIN_SPECTRUM']['run']:
-            del params['BIN_SPECTRUM']['run']
-            for spectrum in blank_spectra:
-                spectrum.bin_spectrum(**params['BIN_SPECTRUM'])
-        # peak picking
-        for spectrum in blank_spectra:
-            spectrum.peak_picking(**params['PEAK_PICKING'])
-        # generate feature matrix
-        blank_feature_matrix = get_feature_matrix(blank_spectra, missing_value_imputation=False)
-        # get exclusion list and return as df.to_dict('records')
-        exclusion_list_df = pd.DataFrame(data={'m/z': np.unique(blank_feature_matrix['mz'].values)})
-        return exclusion_list_df.to_dict('records'), {'margin': '20px', 'display': 'flex'}, blank_params_log
+                spectrum.peak_picking(**params['PEAK_PICKING'])
+            # generate feature matrix
+            blank_feature_matrix = get_feature_matrix(blank_spectra, missing_value_imputation=False)
+            # get exclusion list and return as df.to_dict('records')
+            exclusion_list_df = pd.DataFrame(data={'m/z': np.unique(blank_feature_matrix['mz'].values)})
+            return (exclusion_list_df.to_dict('records'),
+                    {'margin': '20px', 'display': 'flex', 'justify-content': 'center', 'width': '95%'},
+                    blank_params_log, is_open)
+
+
+@app.callback(Output('exclusion_list_3d_data_error_modal', 'is_open'),
+              Input('exclusion_list_3d_data_error_modal_close', 'n_clicks'),
+              State('exclusion_list_3d_data_error_modal', 'is_open'))
+def toggle_run_success_modal(n_clicks, is_open):
+    """
+    Dash callback to toggle the run success message modal window.
+
+    :param n_clicks: Input signal if the exclusion_list_3d_data_error_modal_close button is clicked.
+    :param is_open: State signal to determine whether the exclusion_list_3d_data_error_modal modal window is open.
+    :return: Output signal to determine whether the exclusion_list_3d_data_error_modal modal window is open.
+    """
+    if n_clicks:
+        return not is_open
+    return is_open
 
 
 @app.callback([Output('exclusion_list_blank_spectra_modal', 'is_open'),
@@ -587,6 +612,7 @@ def upload_exclusion_list_from_csv(n_clicks, exclusion_list, exclusion_list_csv_
     :return: Tuple of exclusion list data and output signal to determine whether the exclusion_list_csv_error_modal
         modal window is open.
     """
+    # TODO: add compatibility for exclusion list with 1/K0 values
     changed_id = [i['prop_id'] for i in callback_context.triggered][0]
     if changed_id == 'upload_exclusion_list_from_csv.n_clicks':
         main_tk_window = tkinter.Tk()
@@ -686,6 +712,10 @@ def clear_exclusion_list(n_clicks):
                Input('peak_picking_deisotope_use_decreasing_model', 'value'),
                Input('peak_picking_deisotope_start_intensity_check_value', 'value'),
                Input('peak_picking_deisotope_add_up_intensity', 'value'),
+               Input('peak_picking_3d_min_distance_value', 'value'),
+               Input('peak_picking_3d_noise_value', 'value'),
+               Input('peak_picking_3d_snr_value', 'value'),
+               Input('peak_picking_3d_exclude_border_value', 'value'),
                Input('precursor_selection_top_n_value', 'value'),
                Input('precursor_selection_use_exclusion_list', 'value'),
                Input('precursor_selection_exclusion_list_tolerance_value', 'value'),
@@ -744,6 +774,10 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
                                                peak_picking_use_decreasing_model,
                                                peak_picking_start_intensity_check,
                                                peak_picking_add_up_intensity,
+                                               peak_picking_3d_min_distance,
+                                               peak_picking_3d_noise,
+                                               peak_picking_3d_snr,
+                                               peak_picking_3d_exclude_border,
                                                precursor_selection_top_n_value,
                                                precursor_selection_use_exclusion_list,
                                                precursor_selection_exclusion_list_tolerance_value,
@@ -834,6 +868,16 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
         3rd, etc. A number higher than max_isopeaks will effectively disable use_decreasing_model completely.
     :param peak_picking_add_up_intensity: Whether to sum up the total intensity of each isotopic pattern into the
         intensity of the reported monoisotopic peak.
+    :param peak_picking_3d_min_distance: The minimal allowed distance separating peaks. To find the maximum number of
+        peaks, use min_distance=1.
+    :param peak_picking_3d_noise: Absolute intensity value to be used as baseline noise level. If None, the median
+        value of the intensity array is used as an estimate of the noise.
+    :param peak_picking_3d_snr: Minimum signal-to-noise ratio required to consider peak.
+    :param peak_picking_3d_exclude_border: If positive integer, excludes peaks from within n pixels of the border of
+        the image. If tuple of non-negative ints, the length of the tuple must match the input array's dimensionality.
+        Each element of the tuple will exclude peaks within n pixels of the border of the image along that dimension.
+        If True, takes the min_distance parameter as value. If zero or False, peaks are identified regardless of their
+        distance from the border.
     :param precursor_selection_top_n_value: Number of desired precursors selected for MS/MS acquisition.
     :param precursor_selection_use_exclusion_list: Whether to use exclusion list during precursor selection.
     :param precursor_selection_exclusion_list_tolerance_value: Tolerance in daltons to use when comparing peak lists to
@@ -898,6 +942,10 @@ def toggle_edit_preprocessing_parameters_modal(n_clicks_button,
             preprocessing_params['PEAK_PICKING']['use_decreasing_model'] = peak_picking_use_decreasing_model
             preprocessing_params['PEAK_PICKING']['start_intensity_check'] = peak_picking_start_intensity_check
             preprocessing_params['PEAK_PICKING']['add_up_intensity'] = peak_picking_add_up_intensity
+            preprocessing_params['PEAK_PICKING_3D']['min_distance'] = peak_picking_3d_min_distance
+            preprocessing_params['PEAK_PICKING_3D']['noise'] = peak_picking_3d_noise
+            preprocessing_params['PEAK_PICKING_3D']['snr'] = peak_picking_3d_snr
+            preprocessing_params['PEAK_PICKING_3D']['exclude_border'] = peak_picking_3d_exclude_border
             preprocessing_params['PRECURSOR_SELECTION']['top_n'] = precursor_selection_top_n_value
             preprocessing_params['PRECURSOR_SELECTION']['use_exclusion_list'] = precursor_selection_use_exclusion_list
             preprocessing_params['PRECURSOR_SELECTION']['exclusion_list_tolerance'] = precursor_selection_exclusion_list_tolerance_value
@@ -1210,6 +1258,9 @@ def preview_precursor_list(n_clicks,
                 spectra[spot] = [spectrum for spectrum in data if spectrum.coord == spot][0]
         params = copy.deepcopy(preprocessing_params)
         sample_params_log = copy.deepcopy(params)
+        # no exclusion list if 3D spectrum with TIMS
+        if any([isinstance(i, PMP3DTdfSpectrum) for i in spectra.values()]):
+            params['PRECURSOR_SELECTION']['use_exclusion_list'] = False
         # preprocessing
         if params['TRIM_SPECTRUM']['run']:
             del params['TRIM_SPECTRUM']['run']
@@ -1237,9 +1288,12 @@ def preview_precursor_list(n_clicks,
                 spectrum.bin_spectrum(**params['BIN_SPECTRUM'])
         # peak picking
         for key, spectrum in spectra.items():
-            spectrum.peak_picking(**params['PEAK_PICKING'])
+            if isinstance(spectrum, PMP3DTdfSpectrum):
+                spectrum.peak_picking(**params['PEAK_PICKING_3D'])
+            else:
+                spectrum.peak_picking(**params['PEAK_PICKING'])
         # groups have been defined
-        if len(spot_groups.keys()) > 0:
+        if len(spot_groups.keys()) > 0 and not any([isinstance(i, PMP3DTdfSpectrum) for i in spectra.values()]):
             # process groups
             spots_in_group = [i for value in spot_groups.values() for i in value]
             for group, list_of_spots in spot_groups.items():
@@ -1363,19 +1417,29 @@ def preview_precursor_list(n_clicks,
                         spectrum.peak_picking_indices = merged_df['Indices'].values
             # subset peak picked peaks to only include top n peaks
             for key, spectrum in spectra.items():
-                top_n_indices = np.argsort(spectrum.peak_picked_intensity_array)[::-1][:params['PRECURSOR_SELECTION']['top_n']]
-                spectrum.peak_picked_mz_array = spectrum.peak_picked_mz_array[top_n_indices]
-                spectrum.peak_picked_intensity_array = spectrum.peak_picked_intensity_array[top_n_indices]
-                spectrum.peak_picking_indices = spectrum.peak_picking_indices[top_n_indices]
-                if key not in precursor_data.keys():
-                    precursor_data[key] = {}
-                    precursor_data[key]['peak_picked_mz_array'] = copy.deepcopy(spectra[key].peak_picked_mz_array)
-                    precursor_data[key]['peak_picked_intensity_array'] = copy.deepcopy(spectra[key].peak_picked_intensity_array)
-                    precursor_data[key]['peak_picking_indices'] = copy.deepcopy(spectra[key].peak_picking_indices)
-                elif key in precursor_data.keys():
-                    precursor_data[key]['peak_picked_mz_array'] = copy.deepcopy(spectra[key].peak_picked_mz_array)
-                    precursor_data[key]['peak_picked_intensity_array'] = copy.deepcopy(spectra[key].peak_picked_intensity_array)
-                    precursor_data[key]['peak_picking_indices'] = copy.deepcopy(spectra[key].peak_picking_indices)
+                if isinstance(spectrum, PMP3DTdfSpectrum):
+                    top_n_df = spectrum.get_feature_list().sort_values(by='Intensity',
+                                                                       ascending=False,
+                                                                       ignore_index=True).head(params['PRECURSOR_SELECTION']['top_n'])
+                    spectrum.peak_picked_mz_array = copy.deepcopy(top_n_df['m/z'])
+                    spectrum.peak_picked_mobility_array = copy.deepcopy(top_n_df['1/K0'])
+                    spectrum.peak_picked_intensity_array = copy.deepcopy(top_n_df['Intensity'])
+                    if key not in precursor_data.keys():
+                        precursor_data[key] = top_n_df.to_dict('records')
+                else:
+                    top_n_indices = np.argsort(spectrum.peak_picked_intensity_array)[::-1][:params['PRECURSOR_SELECTION']['top_n']]
+                    spectrum.peak_picked_mz_array = spectrum.peak_picked_mz_array[top_n_indices]
+                    spectrum.peak_picked_intensity_array = spectrum.peak_picked_intensity_array[top_n_indices]
+                    spectrum.peak_picking_indices = spectrum.peak_picking_indices[top_n_indices]
+                    if key not in precursor_data.keys():
+                        precursor_data[key] = {}
+                        precursor_data[key]['peak_picked_mz_array'] = copy.deepcopy(spectra[key].peak_picked_mz_array)
+                        precursor_data[key]['peak_picked_intensity_array'] = copy.deepcopy(spectra[key].peak_picked_intensity_array)
+                        precursor_data[key]['peak_picking_indices'] = copy.deepcopy(spectra[key].peak_picking_indices)
+                    elif key in precursor_data.keys():
+                        precursor_data[key]['peak_picked_mz_array'] = copy.deepcopy(spectra[key].peak_picked_mz_array)
+                        precursor_data[key]['peak_picked_intensity_array'] = copy.deepcopy(spectra[key].peak_picked_intensity_array)
+                        precursor_data[key]['peak_picking_indices'] = copy.deepcopy(spectra[key].peak_picking_indices)
         # populate dropdown menu
         dropdown_options = [{'label': i, 'value': i} for i in indexed_data.keys() if i not in blank_spots['spots']]
         dropdown_value = [i for i in indexed_data.keys() if i not in blank_spots['spots']]
@@ -1471,17 +1535,26 @@ def update_preview_spectrum(value, indexed_data, sample_params_log, precursor_da
     if sample_params_log['BIN_SPECTRUM']['run']:
         del sample_params_log['BIN_SPECTRUM']['run']
         spectrum.bin_spectrum(**sample_params_log['BIN_SPECTRUM'])
-    if value in precursor_data.keys():
-        spectrum.peak_picked_mz_array = copy.deepcopy(precursor_data[value]['peak_picked_mz_array'])
-        spectrum.peak_picked_intensity_array = copy.deepcopy(precursor_data[value]['peak_picked_intensity_array'])
-        spectrum.peak_picking_indices = copy.deepcopy(precursor_data[value]['peak_picking_indices'])
-    if spectrum.peak_picking_indices is None:
-        label_peaks = False
+    if isinstance(spectrum, PMP3DTdfSpectrum):
+        if value in precursor_data.keys():
+            top_n_df = pd.DataFrame(precursor_data[value])
+            spectrum.peak_picked_mz_array = copy.deepcopy(top_n_df)
+            spectrum.peak_picked_mobility_array = copy.deepcopy(top_n_df)
+            spectrum.peak_picked_intensity_array = copy.deepcopy(top_n_df)
+        fig = get_peakmap(spectrum)
+        return fig, None
     else:
-        label_peaks = True
-    fig = get_spectrum(spectrum, label_peaks=label_peaks)
-    cleanup_file_system_backend(FILE_SYSTEM_BACKEND)
-    return fig, Serverside(fig)
+        if value in precursor_data.keys():
+            spectrum.peak_picked_mz_array = copy.deepcopy(precursor_data[value]['peak_picked_mz_array'])
+            spectrum.peak_picked_intensity_array = copy.deepcopy(precursor_data[value]['peak_picked_intensity_array'])
+            spectrum.peak_picking_indices = copy.deepcopy(precursor_data[value]['peak_picking_indices'])
+        if spectrum.peak_picking_indices is None:
+            label_peaks = False
+        else:
+            label_peaks = True
+        fig = get_spectrum(spectrum, label_peaks=label_peaks)
+        cleanup_file_system_backend(FILE_SYSTEM_BACKEND)
+        return fig, Serverside(fig)
 
 
 @app.callback([Output('run_modal', 'is_open'),
@@ -1640,7 +1713,7 @@ def select_new_output_directory(n_clicks):
                Output('run_method_value', 'valid'),
                Output('run_method_value', 'invalid')],
               Input('run_select_method', 'n_clicks'))
-def select_new_method_(n_clicks):
+def select_new_method(n_clicks):
     """
     Dash callback to select a new user defined Bruker .m method for the new AutoXecute sequence and the resulting data
     acquired using that sequence in timsControl.

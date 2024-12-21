@@ -757,6 +757,71 @@ def get_preprocessing_parameters_layout(param_dict):
         style={'margin': '20px'}
     )
 
+    peak_picking_3d_parameters = html.Div(
+        [
+            html.H5('3D Peak Picking Parameters'),
+            html.P('Method'),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Minimum Distance'),
+                    dbc.Input(id='peak_picking_3d_min_distance_value',
+                              placeholder=param_dict['PEAK_PICKING_3D']['min_distance'],
+                              value=param_dict['PEAK_PICKING_3D']['min_distance'],
+                              type='number',
+                              min=0,
+                              step=1)
+                ],
+                id='peak_picking_3d_min_distance',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Noise (Optional)'),
+                    dbc.Input(id='peak_picking_3d_noise_value',
+                              placeholder=param_dict['PEAK_PICKING_3D']['noise'],
+                              value=param_dict['PEAK_PICKING_3D']['noise'],
+                              type='number',
+                              min=0,
+                              step=0.1)
+                ],
+                id='peak_picking_3d_noise',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Signal-to-Noise Ratio'),
+                    dbc.Input(id='peak_picking_3d_snr_value',
+                              placeholder=param_dict['PEAK_PICKING_3D']['snr'],
+                              value=param_dict['PEAK_PICKING_3D']['snr'],
+                              type='number',
+                              min=0,
+                              step=1)
+                ],
+                id='peak_picking_3d_snr',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            ),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupText('Exclude Border'),
+                    dbc.Input(id='peak_picking_3d_exclude_border_value',
+                              placeholder=param_dict['PEAK_PICKING_3D']['exclude_border'],
+                              value=param_dict['PEAK_PICKING_3D']['exclude_border'],
+                              type='number',
+                              min=0,
+                              step=1)
+                ],
+                id='peak_picking_3d_exclude_border',
+                style={'margin': '10px',
+                       'display': 'flex'}
+            )
+        ],
+        id='peak_picking_3d_parameters',
+        style={'margin': '20px'}
+    )
+
     precursor_selection_parameters = html.Div(
         [
             html.H5('Precursor Selection Parameters'),
@@ -813,6 +878,7 @@ def get_preprocessing_parameters_layout(param_dict):
             normalize_intensity_parameters,
             bin_spectrum_parameters,
             peak_picking_parameters,
+            peak_picking_3d_parameters,
             precursor_selection_parameters]
 
 
@@ -1337,6 +1403,21 @@ def get_dashboard_layout(param_dict, plate_format, autox_path_dict, autox_seq):
                         fullscreen=True,
                         backdrop='static',
                         scrollable=True,
+                        centered=True,
+                        is_open=False
+                    ),
+                    dbc.Modal(
+                        [
+                            dbc.ModalHeader(dbc.ModalTitle('Error')),
+                            dbc.ModalBody('An exclusion list cannot be generated for 3D datasets with TIMS data.'),
+                            dbc.ModalFooter(
+                                dbc.Button('Close',
+                                           id='exclusion_list_3d_data_error_modal_close',
+                                           className='ms-auto')
+                            )
+                        ],
+                        id='exclusion_list_3d_data_error_modal',
+                        size='lg',
                         centered=True,
                         is_open=False
                     ),
